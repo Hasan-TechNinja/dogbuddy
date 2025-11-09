@@ -1,6 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import User
 from django.core.validators import MinValueValidator, MaxValueValidator
+from django.utils import timezone
 
 # Create your models here.
 
@@ -28,3 +29,20 @@ class Profile(models.Model):
         constraints = [
             models.UniqueConstraint(fields=['user'], name='unique_user_profile')
         ]
+
+
+class EmailVerification(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="email_verifications")
+    code = models.CharField(max_length=6)
+    created_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField(blank=True, null=True)
+    last_sent_at = models.DateTimeField(auto_now=True, blank=True, null=True)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["user", "code"]),
+            models.Index(fields=["expires_at"]),
+        ]
+
+    def is_expired(self):
+        return timezone.now() > self.expires_at
