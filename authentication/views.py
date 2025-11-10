@@ -11,6 +11,8 @@ from rest_framework.response import Response
 from rest_framework import status, permissions
 from django.conf import settings
 from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework_simplejwt.exceptions import TokenError
 
 
 # Create your views here.
@@ -160,7 +162,6 @@ class RegistrationView(APIView):
 
         EmailVerification.objects.create(user=user, code=code)
         return Response({'message': 'User registered successfully, please verify your email.'}, status=status.HTTP_201_CREATED)
-# ...existing code...
 
 
 
@@ -217,14 +218,33 @@ class LogoutView(APIView):
     def post(self, request):
         try:
             refresh_token = request.data.get('refresh')
+
+            if not refresh_token:
+                return Response(
+                    {'error': 'Refresh token is required.'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            # Create a RefreshToken instance and blacklist it
             token = RefreshToken(refresh_token)
-            token.blocklist()
+            token.blacklist()  # This adds the token to the blacklist
 
-            return Response({'message': "Logged out successfully."}, status=status.HTTP_200_OK)
+            return Response(
+                {'message': 'Logged out successfully.'},
+                status=status.HTTP_200_OK
+            )
 
+        except TokenError as e:
+            # Handles invalid, expired, or already blacklisted tokens
+            return Response(
+                {'error': 'Invalid or expired token.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
         except Exception as e:
-            return Response({'error': 'Invalid token.'}, status=status.HTTP_400_BAD_REQUEST)
-        
+            return Response(
+                {'error': 'An error occurred during logout.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
 
 class PasswordResetRequestView(APIView):
