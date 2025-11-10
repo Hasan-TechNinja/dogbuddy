@@ -8,9 +8,9 @@ class ProfileAdmin(admin.ModelAdmin):
         'user',
         'name',
         'account_type',
-        'dog_name',
-        'playfulness_level',
-        'location',
+        # 'dog_name',
+        # 'playfulness_level',
+        # 'location',
         'created_at',
     )
 admin.site.register(Profile, ProfileAdmin)

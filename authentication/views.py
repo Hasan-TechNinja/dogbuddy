@@ -1,6 +1,7 @@
 from django.shortcuts import render
 from .models import Profile, EmailVerification, ProfessionalInformation
-from .serializers import UserSerializer
+from pet.models import PetInfo
+from .serializers import ProfessionalInformationSerializer, ProfileSerializer, UserSerializer
 from django.contrib.auth.models import User
 import random
 from django.core.mail import send_mail
@@ -23,46 +24,32 @@ class ProfileView(APIView):
         except Profile.DoesNotExist:
             return Response({'error': 'Profile not found.'}, status=status.HTTP_404_NOT_FOUND)
 
-        data = {
-            'name': profile.name,
-            'account_type': profile.account_type,
-            'dog_name': profile.dog_name,
-            'playfulness_level': profile.playfulness_level,
-            'location': profile.location,
-            'created_at': profile.created_at,
-        }
-
+        # Retrieve associated professional info if applicable
+        professional_info = None
         if profile.account_type in ['dog_coach', 'dog_sitter']:
-            try:
-                professional_info = ProfessionalInformation.objects.get(profile=profile)
-                data['professional_information'] = {
-                    'name': professional_info.name,
-                    'experience': professional_info.experience,
-                    'about': professional_info.about,
-                    'dog_size_worked_with': professional_info.dog_size_worked_with,
-                }
-            except ProfessionalInformation.DoesNotExist:
-                # If professional info is missing, return personal info and indicate missing professional details
-                data['professional_information'] = None
+            professional_info = ProfessionalInformation.objects.filter(profile=profile).first()
+
+        serializer = ProfileSerializer(profile)
+        data = serializer.data
+
+        if professional_info:
+            data['professional_information'] = ProfessionalInformationSerializer(professional_info).data
+        else:
+            data['professional_information'] = None
 
         return Response(data, status=status.HTTP_200_OK)
-        
 
     def put(self, request):
         try:
             profile = Profile.objects.get(user=request.user)
-            data = request.data
-
-            profile.name = data.get('name', profile.name)
-            # profile.account_type = data.get('account_type', profile.account_type)
-            profile.dog_name = data.get('dog_name', profile.dog_name)
-            profile.playfulness_level = data.get('playfulness_level', profile.playfulness_level)
-            profile.location = data.get('location', profile.location)
-            profile.save()
-
-            return Response({'message': 'Profile updated successfully.'}, status=status.HTTP_200_OK)
         except Profile.DoesNotExist:
             return Response({'error': 'Profile not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+        serializer = ProfileSerializer(profile, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         
 
 class RegistrationView(APIView):
@@ -72,32 +59,71 @@ class RegistrationView(APIView):
         email = request.data.get('email')
         set_password = request.data.get('password')
         confirm_password = request.data.get('confirm_password')
-        type = request.data.get('type')
+        account_type = request.data.get('type')
+
+        if not email or not set_password or not confirm_password:
+            return Response({'error': 'Email and password are required.'}, status=status.HTTP_400_BAD_REQUEST)
 
         if set_password != confirm_password:
-            return Response({'error': 'Password do not match.'}, status = status.HTTP_400_BAD_REQUEST)
+            return Response({'error': 'Passwords do not match.'}, status=status.HTTP_400_BAD_REQUEST)
 
-        if User.objects.filter(email=email).exists():
+        if account_type not in ['normal', 'dog_coach', 'dog_sitter']:
+            return Response({'error': 'Invalid account type.'}, status=status.HTTP_400_BAD_REQUEST)
 
-            user = User.objects.filter(email=email).first()
-
-            if user.is_active:
+        existing = User.objects.filter(email=email).first()
+        if existing:
+            if existing.is_active:
                 return Response({'error': 'Email already in use.'}, status=status.HTTP_400_BAD_REQUEST)
             else:
-                user.delete()
+                existing.delete()
 
-        if type not in ['normal', 'dog_coach', 'dog_sitter']:
-            return Response({'error': 'Invalid account type.'}, status=status.HTTP_400_BAD_REQUEST)
-        
-            
         user = User.objects.create_user(username=email, email=email, password=set_password)
         user.is_active = False
         user.save()
 
-        profile = Profile.objects.get(user = user)
-        profile.account_type = type
+        profile, _ = Profile.objects.get_or_create(user=user)
+        profile.account_type = account_type
 
-        if profile.account_type == 'dog_coach' or profile.account_type == 'dog_sitter':
+        if account_type == 'normal':
+            pet_name = request.data.get('pet_name')
+            playfulness_level = request.data.get('playfulness_level')
+            location = request.data.get('location')
+
+            if pet_name is None:
+                return Response({'error': 'Pet name is required for normal account type.'}, status=status.HTTP_400_BAD_REQUEST)
+            if playfulness_level is None:
+                return Response({'error': 'Playfulness Level is required for normal account type.'}, status=status.HTTP_400_BAD_REQUEST)
+            if location is None:
+                return Response({'error': 'Location is required for normal account type.'}, status=status.HTTP_400_BAD_REQUEST)
+
+            # Save relevant fields on profile
+            profile.dog_name = pet_name
+            # only set if fields exist on profile model
+            if hasattr(profile, 'playfulness_level'):
+                profile.playfulness_level = playfulness_level
+            if hasattr(profile, 'location'):
+                profile.location = location
+            profile.save()
+
+            # Create PetInfo and attach to the newly created user (owner=user).
+            # Use attribute checks to avoid mismatched field names between environments.
+            pet = PetInfo(owner=user)
+            if hasattr(pet, 'name'):
+                pet.name = pet_name
+            if hasattr(pet, 'pet_name'):
+                pet.pet_name = pet_name
+            if hasattr(pet, 'playfulness_level'):
+                pet.playfulness_level = playfulness_level
+            if hasattr(pet, 'location'):
+                pet.location = location
+            # optional additional pet fields
+            if hasattr(pet, 'pet_breed'):
+                pet.pet_breed = request.data.get('pet_breed', '')
+            if hasattr(pet, 'pet_age'):
+                pet.pet_age = request.data.get('pet_age', '')
+            pet.save()
+
+        if account_type in ['dog_coach', 'dog_sitter']:
             professional_name = request.data.get('professional_name')
             experience = request.data.get('experience')
             dog_size_worked_with = request.data.get('dog_size_worked_with')
@@ -113,15 +139,12 @@ class RegistrationView(APIView):
                 return Response({'error': 'About is required for this account type.'}, status=status.HTTP_400_BAD_REQUEST)
 
             professional_info = ProfessionalInformation.objects.create(
-                profile = profile,
-                name = professional_name,
-                experience = experience,
-                dog_size_worked_with = dog_size_worked_with,
-                about = about,
-                
+                profile=profile,
+                name=professional_name,
+                experience=experience,
+                dog_size_worked_with=dog_size_worked_with,
+                about=about,
             )
-            if not professional_info:
-                return Response({'error': 'Error creating professional information.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
         profile.save()
 
@@ -135,9 +158,11 @@ class RegistrationView(APIView):
             fail_silently=False,
         )
 
-        EmailVerification.objects.create(user = user, code = code)
+        EmailVerification.objects.create(user=user, code=code)
         return Response({'message': 'User registered successfully, please verify your email.'}, status=status.HTTP_201_CREATED)
-    
+# ...existing code...
+
+
 
 class EmailVerificationView(APIView):
     permission_classes = [permissions.AllowAny]
