@@ -1,5 +1,5 @@
 from django.contrib import admin
-from . models import Profile
+from . models import Profile, ProfessionalInformation
 
 # Register your models here.
 
@@ -14,3 +14,13 @@ class ProfileAdmin(admin.ModelAdmin):
         'created_at',
     )
 admin.site.register(Profile, ProfileAdmin)
+
+class ProfessionalInformationAdmin(admin.ModelAdmin):
+    list_display = (
+        'profile',
+        'name',
+        'experience',
+        'about',
+        'dog_size_worked_with',
+    )
+admin.site.register(ProfessionalInformation, ProfessionalInformationAdmin)

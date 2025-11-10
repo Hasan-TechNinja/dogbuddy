@@ -1,5 +1,5 @@
 from django.shortcuts import render
-from .models import Profile, EmailVerification
+from .models import Profile, EmailVerification, ProfessionalInformation
 from .serializers import UserSerializer
 from django.contrib.auth.models import User
 import random
@@ -20,17 +20,32 @@ class ProfileView(APIView):
     def get(self, request):
         try:
             profile = Profile.objects.get(user=request.user)
-            data = {
-                'name': profile.name,
-                'account_type': profile.account_type,
-                'dog_name': profile.dog_name,
-                'playfulness_level': profile.playfulness_level,
-                'location': profile.location,
-                'created_at': profile.created_at,
-            }
-            return Response(data, status=status.HTTP_200_OK)
         except Profile.DoesNotExist:
             return Response({'error': 'Profile not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+        data = {
+            'name': profile.name,
+            'account_type': profile.account_type,
+            'dog_name': profile.dog_name,
+            'playfulness_level': profile.playfulness_level,
+            'location': profile.location,
+            'created_at': profile.created_at,
+        }
+
+        if profile.account_type in ['dog_coach', 'dog_sitter']:
+            try:
+                professional_info = ProfessionalInformation.objects.get(profile=profile)
+                data['professional_information'] = {
+                    'name': professional_info.name,
+                    'experience': professional_info.experience,
+                    'about': professional_info.about,
+                    'dog_size_worked_with': professional_info.dog_size_worked_with,
+                }
+            except ProfessionalInformation.DoesNotExist:
+                # If professional info is missing, return personal info and indicate missing professional details
+                data['professional_information'] = None
+
+        return Response(data, status=status.HTTP_200_OK)
         
 
     def put(self, request):
@@ -39,7 +54,7 @@ class ProfileView(APIView):
             data = request.data
 
             profile.name = data.get('name', profile.name)
-            profile.account_type = data.get('account_type', profile.account_type)
+            # profile.account_type = data.get('account_type', profile.account_type)
             profile.dog_name = data.get('dog_name', profile.dog_name)
             profile.playfulness_level = data.get('playfulness_level', profile.playfulness_level)
             profile.location = data.get('location', profile.location)
@@ -81,6 +96,33 @@ class RegistrationView(APIView):
 
         profile = Profile.objects.get(user = user)
         profile.account_type = type
+
+        if profile.account_type == 'dog_coach' or profile.account_type == 'dog_sitter':
+            professional_name = request.data.get('professional_name')
+            experience = request.data.get('experience')
+            dog_size_worked_with = request.data.get('dog_size_worked_with')
+            about = request.data.get('about')
+
+            if professional_name is None:
+                return Response({'error': 'Professional name is required for this account type.'}, status=status.HTTP_400_BAD_REQUEST)
+            if experience is None:
+                return Response({'error': 'Experience is required for this account type.'}, status=status.HTTP_400_BAD_REQUEST)
+            if dog_size_worked_with is None:
+                return Response({'error': 'Dog size worked with is required for this account type.'}, status=status.HTTP_400_BAD_REQUEST)
+            if about is None:
+                return Response({'error': 'About is required for this account type.'}, status=status.HTTP_400_BAD_REQUEST)
+
+            professional_info = ProfessionalInformation.objects.create(
+                profile = profile,
+                name = professional_name,
+                experience = experience,
+                dog_size_worked_with = dog_size_worked_with,
+                about = about,
+                
+            )
+            if not professional_info:
+                return Response({'error': 'Error creating professional information.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
         profile.save()
 
         code = random.randint(10000, 99999)

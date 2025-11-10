@@ -30,6 +30,19 @@ class Profile(models.Model):
             models.UniqueConstraint(fields=['user'], name='unique_user_profile')
         ]
 
+DOG_SIZE_CHOICES = [
+    ('small', 'Small'),
+    ('medium', 'Medium'),
+    ('large', 'Large'),
+    ('all', 'All')
+]
+class ProfessionalInformation(models.Model):
+    profile = models.OneToOneField(Profile, on_delete=models.CASCADE, related_name='professional_info')
+    name = models.CharField(max_length=100)
+    experience = models.CharField(max_length=10)
+    about = models.TextField(max_length=500)
+    dog_size_worked_with = models.CharField(max_length=50, choices=DOG_SIZE_CHOICES, default='all')
+
 
 class EmailVerification(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="email_verifications")
@@ -37,6 +50,8 @@ class EmailVerification(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     expires_at = models.DateTimeField(blank=True, null=True)
     last_sent_at = models.DateTimeField(auto_now=True, blank=True, null=True)
+    location = models.CharField(max_length=255, blank=True, null=True)
+    share_info = models.BooleanField(default=False)
 
     class Meta:
         indexes = [
