@@ -1,4 +1,4 @@
-from django.shortcuts import render
+from django.shortcuts import render, get_object_or_404
 from .models import Profile, EmailVerification, ProfessionalInformation
 from pet.models import PetInfo
 from .serializers import ProfessionalInformationSerializer, ProfileSerializer, UserSerializer
@@ -305,3 +305,16 @@ class PasswordChangeView(APIView):
         EmailVerification.objects.filter(user = user).delete()
 
         return Response({'message': 'Password reset successfully.'}, status=status.HTTP_200_OK)
+    
+
+class DeleteAccount(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def delete(self, request):
+        user = request.user
+        user.delete()
+        
+        return Response(
+            {'message': 'Account deleted successfully.'},
+            status=status.HTTP_204_NO_CONTENT
+        )
