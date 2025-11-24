@@ -33,7 +33,7 @@ class PetInfo(models.Model):
     adoption_documents = models.FileField(upload_to='adoption_documents/', null=True, blank=True)
     description = models.TextField(null=True, blank=True)
     gender = models.CharField(max_length=10, choices=GENDER_CHOICES, blank=True, null=True)
-    status = models.CharField(choices=DOG_MODE, default='snooze')
+    status = models.CharField(max_length=20, choices=DOG_MODE, default='snooze')
     stars = models.ManyToManyField(User, related_name="starred_pets", blank=True)
     points = models.PositiveIntegerField(default=0,)
     image = models.ImageField(upload_to='pet_images/', null=True, blank=True)
