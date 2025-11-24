@@ -15,6 +15,12 @@ GENDER_CHOICES = [
     ('female', 'Female'),
 ]
 
+DOG_MODE = [
+    ('snooze', 'Snooze'),
+    ('walking', 'Walking'),
+    ('playing', 'Playing')
+]
+
 class PetInfo(models.Model):
     owner = models.ForeignKey(User, on_delete=models.CASCADE, related_name='pets')
     name = models.CharField(max_length=100)
@@ -22,11 +28,15 @@ class PetInfo(models.Model):
     location = models.CharField(max_length=255, blank=True, null=True)
     weight = models.PositiveIntegerField(default=0)
     size = models.CharField(max_length=10, choices=SIZE_CHOICES, default='medium')
+    age = models.CharField(max_length=10, default=0)
     medical_records = models.FileField(upload_to='medical_records/', null=True, blank=True)
     adoption_documents = models.FileField(upload_to='adoption_documents/', null=True, blank=True)
     description = models.TextField(null=True, blank=True)
     gender = models.CharField(max_length=10, choices=GENDER_CHOICES, blank=True, null=True)
-    image0 = models.ImageField(upload_to='pet_images/', null=True, blank=True)
+    status = models.CharField(choices=DOG_MODE, default='snooze')
+    stars = models.ManyToManyField(User, related_name="starred_pets", blank=True)
+    points = models.PositiveIntegerField(default=0,)
+    image = models.ImageField(upload_to='pet_images/', null=True, blank=True)
     image1 = models.ImageField(upload_to='pet_images/', null=True, blank=True)
     image2 = models.ImageField(upload_to='pet_images/', null=True, blank=True)
     image3 = models.ImageField(upload_to='pet_images/', null=True, blank=True)
