@@ -26,12 +26,11 @@ class PetInfo(models.Model):
     adoption_documents = models.FileField(upload_to='adoption_documents/', null=True, blank=True)
     description = models.TextField(null=True, blank=True)
     gender = models.CharField(max_length=10, choices=GENDER_CHOICES, blank=True, null=True)
-    image = models.ImageField(upload_to='pet_images/', null=True, blank=True)
+    image0 = models.ImageField(upload_to='pet_images/', null=True, blank=True)
+    image1 = models.ImageField(upload_to='pet_images/', null=True, blank=True)
     image2 = models.ImageField(upload_to='pet_images/', null=True, blank=True)
     image3 = models.ImageField(upload_to='pet_images/', null=True, blank=True)
     image4 = models.ImageField(upload_to='pet_images/', null=True, blank=True)
-    image5 = models.ImageField(upload_to='pet_images/', null=True, blank=True)
-    image6 = models.ImageField(upload_to='pet_images/', null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):

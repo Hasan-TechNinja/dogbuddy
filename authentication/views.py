@@ -314,7 +314,4 @@ class DeleteAccount(APIView):
         user = request.user
         user.delete()
         
-        return Response(
-            {'message': 'Account deleted successfully.'},
-            status=status.HTTP_204_NO_CONTENT
-        )
+        return Response({'message': 'Account deleted successfully.'},status=status.HTTP_204_NO_CONTENT)
