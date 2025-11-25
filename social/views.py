@@ -139,3 +139,53 @@ class PostDetailView(APIView):
             serializer.save(user=request.user)
             return Response(serializer.data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class LikePostView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, post_id):
+        post = get_object_or_404(Post, id=post_id)
+
+        if request.user in post.likes.all():
+            post.likes.remove(request.user)
+            return Response({"message": "Unliked"}, status=status.HTTP_200_OK)
+        else:
+            post.likes.add(request.user)
+            return Response({"message": "Liked"}, status=status.HTTP_200_OK)
+
+
+class CommentView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request, post_id):
+        post = get_object_or_404(Post, id=post_id)
+        comments = Comment.objects.filter(post=post).order_by("-created_at")
+        serializer = CommentSerializer(comments, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def post(self, request, post_id):
+        post = get_object_or_404(Post, id=post_id)
+
+        serializer = CommentSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save(user=request.user, post=post)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class SharePostView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, post_id):
+        post = get_object_or_404(Post, id=post_id)
+
+        # prevent duplicate shares
+        existing = Share.objects.filter(user=request.user, post=post).first()
+        if existing:
+            return Response({"message": "Already shared"}, status=status.HTTP_200_OK)
+
+        share = Share.objects.create(user=request.user, post=post)
+        serializer = ShareSerializer(share)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
