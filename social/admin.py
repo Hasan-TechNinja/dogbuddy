@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Post, Comment, Share, FriendRequest, Friendship
+from .models import Post, Comment, Share, FriendRequest, Friendship, Post, Comment, Share
 
 # Register your models here.
 
@@ -37,3 +37,24 @@ class FriendshipAdmin(admin.ModelAdmin):
         'id', 'user1', 'user2', 'created_at'
     )
 admin.site.register(Friendship, FriendshipAdmin)
+
+
+# class PostAdmin(admin.ModelAdmin):
+#     list_display = (
+#         'id', 'user', 'text', 'tags', 'location', 'created_at', 'likes'
+#     )
+# admin.site.register(Post, PostAdmin)
+
+
+# class CommentAdmin(admin.ModelAdmin):
+#     list_display = (
+#         'id', 'user', 'post' 'text', 'created_at'
+#     )
+# admin.site.register(Comment, CommentAdmin)
+
+
+# class ShareAdmin(admin.ModelAdmin):
+#     list_display = (
+#         'id', 'user', 'post', 'created_at'
+#     )
+# admin.site.register(Share, ShareAdmin)

@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from django.contrib.auth.models import User
-from .models import FriendRequest, Friendship
+from .models import FriendRequest, Friendship, Post, Comment, Share
 from authentication.serializers import UserSerializer
 
 class FriendRequestSerializer(serializers.ModelSerializer):
@@ -19,3 +19,28 @@ class FriendshipSerializer(serializers.ModelSerializer):
     class Meta:
         model = Friendship
         fields = ['id', 'user1', 'user2', 'created_at']
+
+class PostSerializer(serializers.ModelSerializer):
+    likes_count = serializers.IntegerField(read_only=True)
+    comments_count = serializers.IntegerField(read_only=True)
+    shares_count = serializers.IntegerField(read_only=True)
+
+    class Meta:
+        model = Post
+        fields = "__all__"
+        read_only_fields = ["user"]
+
+
+class CommentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Comment
+        fields = "__all__"
+        read_only_fields = ["post", "user"]
+
+
+class ShareSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Share
+        fields = "__all__"
+        read_only_fields = ["post", "user"]
+

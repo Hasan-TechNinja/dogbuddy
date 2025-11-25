@@ -4,8 +4,8 @@ from rest_framework import status, permissions
 from django.shortcuts import get_object_or_404
 from django.contrib.auth.models import User
 from django.db.models import Q
-from .models import FriendRequest, Friendship
-from .serializers import FriendRequestSerializer, FriendshipSerializer
+from .models import FriendRequest, Friendship, Post, Comment, Share
+from .serializers import FriendRequestSerializer, FriendshipSerializer, PostSerializer, CommentSerializer, ShareSerializer
 from authentication.serializers import UserSerializer
 
 class SendFriendRequestView(APIView):
@@ -107,3 +107,35 @@ class PendingRequestsView(APIView):
         requests = FriendRequest.objects.filter(to_user=request.user)
         serializer = FriendRequestSerializer(requests, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class PostView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+    def post(self, request):
+        serializer = PostSerializer(data = request.data)
+        if serializer.is_valid():
+            serializer.save(user = request.user)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+    def get(self, request):
+        post = Post.objects.filter(user = request.user)
+        serializer = PostSerializer(post, many = True)
+
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    
+
+class PostDetailView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request, id):
+        post = get_object_or_404(Post, id=id, user=request.user)
+        serializer = PostSerializer(post)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def put(self, request, id):
+        post = get_object_or_404(Post, id=id, user=request.user)
+        serializer = PostSerializer(post, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save(user=request.user)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
