@@ -4,6 +4,7 @@ from .models import DOG_MODE
 
 
 class PetInfoSerializer(serializers.ModelSerializer):
+    age = serializers.ReadOnlyField()
     class Meta:
         model = PetInfo
         fields = "__all__"

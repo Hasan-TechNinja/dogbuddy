@@ -1,6 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import User
 from django.core.validators import MinValueValidator, MaxValueValidator
+from datetime import date
 
 # Create your models here.
 
@@ -28,7 +29,7 @@ class PetInfo(models.Model):
     location = models.CharField(max_length=255, blank=True, null=True)
     weight = models.PositiveIntegerField(default=0)
     size = models.CharField(max_length=10, choices=SIZE_CHOICES, default='medium')
-    age = models.CharField(max_length=10, default=0)
+    date_of_birth = models.DateField(auto_now_add=False, blank=True, null=True)
     medical_records = models.FileField(upload_to='medical_records/', null=True, blank=True)
     adoption_documents = models.FileField(upload_to='adoption_documents/', null=True, blank=True)
     description = models.TextField(null=True, blank=True)
@@ -45,3 +46,17 @@ class PetInfo(models.Model):
 
     def __str__(self):
         return self.name
+    
+    @property
+    def age(self):
+        """Return age in whole years."""
+        if not self.date_of_birth:
+            return None
+
+        today = date.today()
+        years = today.year - self.date_of_birth.year
+
+        if (today.month, today.day) < (self.date_of_birth.month, self.date_of_birth.day):
+            years -= 1
+
+        return years
