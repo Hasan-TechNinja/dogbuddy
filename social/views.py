@@ -6,7 +6,8 @@ from django.contrib.auth.models import User
 from django.db.models import Q
 from .models import FriendRequest, Friendship, Post, Comment, Share
 from .serializers import FriendRequestSerializer, FriendshipSerializer, PostSerializer, CommentSerializer, ShareSerializer
-from authentication.serializers import UserSerializer
+from authentication.serializers import ProfileSerializer, UserSerializer
+from authentication.models import Profile
 
 class SendFriendRequestView(APIView):
     permission_classes = [permissions.IsAuthenticated]
@@ -99,6 +100,25 @@ class FriendListView(APIView):
         
         serializer = UserSerializer(friends, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
+    
+    
+class GeneralUserListView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        users = Profile.objects.filter(account_type='normal')
+        serializer = ProfileSerializer(users, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    
+    
+class ProfileView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request, user_id):
+        profile = get_object_or_404(Profile, user__id=user_id)
+        serializer = ProfileSerializer(profile)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    
 
 class PendingRequestsView(APIView):
     permission_classes = [permissions.IsAuthenticated]
