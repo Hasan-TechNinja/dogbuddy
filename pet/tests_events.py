@@ -14,7 +14,7 @@ class EventEnrollmentTests(TestCase):
         self.pet = PetInfo.objects.create(
             owner=self.user,
             name='Buddy',
-            species='Dog', # Assuming species field exists or is not required based on models.py read earlier, actually it wasn't there but let's check models.py again if needed. Wait, models.py didn't have species. It had size, gender etc.
+            # species='Dog', # Removed invalid field
             # Let's use valid fields from models.py
             size='medium',
             gender='male'

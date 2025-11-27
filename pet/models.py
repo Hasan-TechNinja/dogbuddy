@@ -69,7 +69,7 @@ class Event(models.Model):
     location = models.CharField(max_length=200)
     data = models.DateTimeField()
     max_participants = models.PositiveIntegerField(blank=True, null=True)
-    cost = models.DecimalField(max_digits=10, decimal_places=2, default=None, null=True, blank=True)
+    cost = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     cancellation_fee = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
     required_items = models.CharField(max_length=500, blank=True, null=True)
     description = models.TextField(blank=True, null=True)
