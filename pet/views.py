@@ -133,3 +133,38 @@ class EventUnenrollView(APIView):
         event.save()
 
         return Response({"detail": "Pet unenrolled successfully."}, status=status.HTTP_200_OK)
+    
+
+class EventDetailsView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request, id):
+        try:
+            event = Event.objects.get(id=id)
+        except Event.DoesNotExist:
+            return Response(
+                {"error": "Event not found"}, 
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        serializer = EventSerializer(event)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    
+
+class CancelEventView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def delete(self, request, event_id):
+        event = get_object_or_404(Event, id = event_id, organizer = request.user)
+        event.delete()
+        return Response({'detail': 'Event cancelled successfully.'}, status=status.HTTP_200_OK)
+    
+
+class MyEventsView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        events = Event.objects.filter(organizer = request.user)
+        serializer = EventSerializer(events, many = True)
+
+        return Response(serializer.data, status=status.HTTP_200_OK)
