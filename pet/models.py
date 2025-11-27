@@ -60,3 +60,22 @@ class PetInfo(models.Model):
             years -= 1
 
         return years
+    
+
+class Event(models.Model):
+    organizer = models.ForeignKey(User, on_delete=models.CASCADE, related_name='organized_events')
+    title = models.CharField(max_length=200)
+    activity = models.CharField(max_length=200)
+    location = models.CharField(max_length=200)
+    data = models.DateTimeField()
+    max_participants = models.PositiveIntegerField(blank=True, null=True)
+    cost = models.DecimalField(max_digits=10, decimal_places=2, default=None, null=True, blank=True)
+    cancellation_fee = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
+    required_items = models.CharField(max_length=500, blank=True, null=True)
+    description = models.TextField(blank=True, null=True)
+    image = models.ImageField(upload_to='event_images/', null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    enrolled_pets = models.ManyToManyField(PetInfo, related_name='events', blank=True)
+
+    def __str__(self):
+        return self.title

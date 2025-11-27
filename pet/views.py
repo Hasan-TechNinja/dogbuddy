@@ -1,6 +1,6 @@
 from django.shortcuts import render, get_object_or_404
-from . models import PetInfo
-from . serializers import PetInfoSerializer, PetStatusSerializer, PetStatusUpdateSerializer
+from . models import PetInfo, Event
+from . serializers import PetInfoSerializer, PetStatusSerializer, PetStatusUpdateSerializer, EventSerializer
 from rest_framework.response import Response
 from rest_framework import status, permissions
 from rest_framework.views import APIView
@@ -54,3 +54,82 @@ class PetStatusView(APIView):
 
         return Response({"status": pet_info.status}, status=200)
 
+
+class EventCreateView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        serializer = EventSerializer(data = request.data)
+        if serializer.is_valid():
+            serializer.save(organizer=request.user)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+
+class EventListView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        events = Event.objects.all()
+        serializer = EventSerializer(events, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    
+
+class EventEnrollView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, event_id):
+        event = get_object_or_404(Event, id=event_id)
+        user = request.user
+        pet_id = request.data.get('pet_id')
+
+        if pet_id:
+            pet = get_object_or_404(PetInfo, id=pet_id, owner=user)
+        else:
+            pets = PetInfo.objects.filter(owner=user)
+            if pets.count() == 1:
+                pet = pets.first()
+            elif pets.count() > 1:
+                return Response({"detail": "Multiple pets found. Please specify pet_id."}, status=status.HTTP_400_BAD_REQUEST)
+            else:
+                return Response({"detail": "No pets found for this user."}, status=status.HTTP_404_NOT_FOUND)
+
+        if event.enrolled_pets.filter(id=pet.id).exists():
+            return Response({"detail": "Pet already enrolled in this event."}, status=status.HTTP_400_BAD_REQUEST)
+
+        if event.enrolled_pets.count() >= event.max_participants:
+            return Response({"detail": "Event has reached maximum participants."}, status=status.HTTP_400_BAD_REQUEST)
+
+        event.enrolled_pets.add(pet)
+        event.save()
+
+        return Response({"detail": "Pet enrolled successfully."}, status=status.HTTP_200_OK)
+    
+
+class EventUnenrollView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, event_id):
+        event = get_object_or_404(Event, id=event_id)
+        user = request.user
+        pet_id = request.data.get('pet_id')
+
+        if pet_id:
+            pet = get_object_or_404(PetInfo, id=pet_id, owner=user)
+        else:
+            pets = PetInfo.objects.filter(owner=user)
+            if pets.count() == 1:
+                pet = pets.first()
+            elif pets.count() > 1:
+                return Response({"detail": "Multiple pets found. Please specify pet_id."}, status=status.HTTP_400_BAD_REQUEST)
+            else:
+                return Response({"detail": "No pets found for this user."}, status=status.HTTP_404_NOT_FOUND)
+
+        if not event.enrolled_pets.filter(id=pet.id).exists():
+            return Response({"detail": "Pet is not enrolled in this event."}, status=status.HTTP_400_BAD_REQUEST)
+
+        event.enrolled_pets.remove(pet)
+        event.save()
+
+        return Response({"detail": "Pet unenrolled successfully."}, status=status.HTTP_200_OK)
