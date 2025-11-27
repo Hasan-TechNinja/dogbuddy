@@ -13,7 +13,8 @@ from django.conf import settings
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.exceptions import TokenError
-
+from django.contrib.auth.password_validation import validate_password
+from django.core.exceptions import ValidationError
 
 # Create your views here.
 
@@ -68,6 +69,12 @@ class RegistrationView(APIView):
 
         if set_password != confirm_password:
             return Response({'error': 'Passwords do not match.'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            validate_password(set_password)
+        except ValidationError as e:
+            return Response({'error': e.messages}, status=status.HTTP_400_BAD_REQUEST)
+
 
         if account_type not in ['normal', 'dog_coach', 'dog_sitter']:
             return Response({'error': 'Invalid account type.'}, status=status.HTTP_400_BAD_REQUEST)
