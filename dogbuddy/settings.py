@@ -33,6 +33,7 @@ ALLOWED_HOSTS = ["10.10.13.61", "localhost", "*"]
 # Application definition
 
 INSTALLED_APPS = [
+    'daphne',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -76,7 +77,8 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = 'dogbuddy.wsgi.application'
+# WSGI_APPLICATION = 'dogbuddy.wsgi.application'
+ASGI_APPLICATION = "dogbuddy.asgi.application"
 
 
 # Database
