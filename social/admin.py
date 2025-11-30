@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Post, Comment, Share, FriendRequest, Friendship, Post, Comment, Share
+from .models import Post, Comment, Share, FriendRequest, Friendship, Post, Comment, Share, ChatMessage
 
 # Register your models here.
 
@@ -58,3 +58,9 @@ admin.site.register(Friendship, FriendshipAdmin)
 #         'id', 'user', 'post', 'created_at'
 #     )
 # admin.site.register(Share, ShareAdmin)
+
+class ChatMessageAdmin(admin.ModelAdmin):
+    list_display = (
+        "id", "sender", "receiver", "message", "timestamp"
+    )
+admin.site.register(ChatMessage, ChatMessageAdmin)

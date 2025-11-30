@@ -4,8 +4,8 @@ from rest_framework import status, permissions
 from django.shortcuts import get_object_or_404
 from django.contrib.auth.models import User
 from django.db.models import Q
-from .models import FriendRequest, Friendship, Post, Comment, Share
-from .serializers import FriendRequestSerializer, FriendshipSerializer, PostSerializer, CommentSerializer, ShareSerializer
+from .models import ChatMessage, FriendRequest, Friendship, Post, Comment, Share
+from .serializers import ChatMessageSerializer, FriendRequestSerializer, FriendshipSerializer, PostSerializer, CommentSerializer, ShareSerializer
 from authentication.serializers import ProfileSerializer, UserSerializer
 from authentication.models import Profile
 
@@ -209,3 +209,16 @@ class SharePostView(APIView):
         share = Share.objects.create(user=request.user, post=post)
         serializer = ShareSerializer(share)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+
+class ChatMessageView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request, chat_partner_id):
+        chat_partner = get_object_or_404(User, id=chat_partner_id)
+        messages = ChatMessage.objects.filter(
+            (Q(sender=request.user) & Q(receiver=chat_partner)) |
+            (Q(sender=chat_partner) & Q(receiver=request.user))
+        ).order_by("timestamp")
+        serializer = ChatMessageSerializer(messages, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)

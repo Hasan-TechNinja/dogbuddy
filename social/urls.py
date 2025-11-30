@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import SendFriendRequestView, AcceptFriendRequestView, RejectFriendRequestView, UnfriendView, FriendListView, PendingRequestsView, PostView, PostDetailView, LikePostView, CommentView, SharePostView, GeneralUserListView, ProfileView
+from .views import ChatMessageView, SendFriendRequestView, AcceptFriendRequestView, RejectFriendRequestView, UnfriendView, FriendListView, PendingRequestsView, PostView, PostDetailView, LikePostView, CommentView, SharePostView, GeneralUserListView, ProfileView
 
 urlpatterns = [
     path('friend-request/send/', SendFriendRequestView.as_view(), name='send-friend-request'),
@@ -15,5 +15,6 @@ urlpatterns = [
     path("post/<int:post_id>/share/", SharePostView.as_view(), name='share'),
     path("users/", GeneralUserListView.as_view(), name="general-user-list"),
     path("profile/<int:user_id>/", ProfileView.as_view(), name="profile-view"),
+    path('chat/messages/<int:chat_partner_id>/', ChatMessageView.as_view(), name='chat-messages'),
 
 ]

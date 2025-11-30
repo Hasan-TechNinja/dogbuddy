@@ -1,26 +1,29 @@
 """
 ASGI config for dogbuddy project.
-
-It exposes the ASGI callable as a module-level variable named ``application``.
-
-For more information on this file, see
-https://docs.djangoproject.com/en/4.2/howto/deployment/asgi/
 """
 
-# filepath: /home/hasan/Development/dogbuddy/dogbuddy/asgi.py
 import os
+import django
 from django.core.asgi import get_asgi_application
 from channels.routing import ProtocolTypeRouter, URLRouter
-from channels.auth import AuthMiddlewareStack
-from social.routing import websocket_urlpatterns
 
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'dogbuddy.settings')
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "dogbuddy.settings")
+
+# 🔥 Load Django BEFORE importing anything from Django apps
+django.setup()
+
+# Only import AFTER settings + Django setup is completed
+from social.routing import websocket_urlpatterns
+from social.middleware import JWTAuthMiddleware
+
+# Initialize Django ASGI application
+django_asgi_app = get_asgi_application()
 
 application = ProtocolTypeRouter({
-    "http": get_asgi_application(),
-    "websocket": AuthMiddlewareStack(
-        URLRouter(
-            websocket_urlpatterns
-        )
+    "http": django_asgi_app,
+
+    # 🔥 Use custom JWT middleware for WebSocket authentication
+    "websocket": JWTAuthMiddleware(
+        URLRouter(websocket_urlpatterns)
     ),
 })

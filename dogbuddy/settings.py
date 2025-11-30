@@ -27,12 +27,13 @@ SECRET_KEY = 'django-insecure-m=(j#e%cygh^bomi#*o312l#m%#f=bqnuyrr+oz5fhhy5r@q@q
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ["10.10.13.61", "localhost", "*"]
+ALLOWED_HOSTS = ["127.0.0.1", "localhost", "*"]
 
 
 # Application definition
 
 INSTALLED_APPS = [
+    'channels',
     'daphne',
     'django.contrib.admin',
     'django.contrib.auth',
@@ -79,6 +80,16 @@ TEMPLATES = [
 
 # WSGI_APPLICATION = 'dogbuddy.wsgi.application'
 ASGI_APPLICATION = "dogbuddy.asgi.application"
+
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            "hosts": [("127.0.0.1", 6379)],
+            # "hosts": [("redis", 6379)],
+        },
+    },
+}
 
 
 # Database
