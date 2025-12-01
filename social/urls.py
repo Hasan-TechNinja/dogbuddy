@@ -1,5 +1,6 @@
 from django.urls import path
-from .views import ChatMessageView, SendFriendRequestView, AcceptFriendRequestView, RejectFriendRequestView, UnfriendView, FriendListView, PendingRequestsView, PostView, PostDetailView, LikePostView, CommentView, SharePostView, GeneralUserListView, ProfileView
+from .views import ChatMessageView, SendFriendRequestView, AcceptFriendRequestView, RejectFriendRequestView, UnfriendView, FriendListView, PendingRequestsView, PostView, PostDetailView, LikePostView, CommentView, SharePostView, GeneralUserListView, ProfileView, CreateGroup, JoinGroup
+from . import views
 
 urlpatterns = [
     path('friend-request/send/', SendFriendRequestView.as_view(), name='send-friend-request'),
@@ -16,5 +17,9 @@ urlpatterns = [
     path("users/", GeneralUserListView.as_view(), name="general-user-list"),
     path("profile/<int:user_id>/", ProfileView.as_view(), name="profile-view"),
     path('chat/messages/<int:chat_partner_id>/', ChatMessageView.as_view(), name='chat-messages'),
+    path('create-group/', CreateGroup.as_view(), name='create-group'),
+    path('group/<int:group_id>/add-member/', JoinGroup.as_view(), name='add-group-member'),
+    path('group/members/<int:group_id>/', views.GroupMembers.as_view(), name='group-members'),
+    path('group/<int:group_id>/remove-member/', views.RemoveGroupMemberView.as_view(), name='remove-group-member')
 
 ]

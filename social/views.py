@@ -4,7 +4,7 @@ from rest_framework import status, permissions
 from django.shortcuts import get_object_or_404
 from django.contrib.auth.models import User
 from django.db.models import Q
-from .models import ChatMessage, FriendRequest, Friendship, Post, Comment, Share
+from .models import ChatGroup, ChatMessage, FriendRequest, Friendship, GroupMember, Post, Comment, Share
 from .serializers import ChatMessageSerializer, FriendRequestSerializer, FriendshipSerializer, PostSerializer, CommentSerializer, ShareSerializer
 from authentication.serializers import ProfileSerializer, UserSerializer
 from authentication.models import Profile
@@ -222,3 +222,69 @@ class ChatMessageView(APIView):
         ).order_by("timestamp")
         serializer = ChatMessageSerializer(messages, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
+    
+
+class CreateGroup(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        name = request.data.get("name")
+        if not name:
+            return Response({"error": "Name required"}, status=400)
+
+        group = ChatGroup.objects.create(name=name)
+        GroupMember.objects.create(group=group, user=request.user)
+        return Response({
+            "group_id": group.id,
+            "name": group.name,
+            "admin": request.user.username
+            }, status=201)
+
+
+class JoinGroup(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, group_id):
+        try:
+            group = ChatGroup.objects.get(id=group_id)
+        except:
+            return Response({"error": "Group not found"}, status=404)
+
+        GroupMember.objects.get_or_create(group=group, user=request.user)
+        return Response({"message": "Joined"})
+
+
+class GroupMembers(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request, group_id):
+        try:
+            group = ChatGroup.objects.get(id=group_id)
+        except:
+            return Response({"error": "Group not found"}, status=404)
+
+        members = GroupMember.objects.filter(group=group).select_related("user")
+        member_list = [{"id": m.user.id, "username": m.user.username} for m in members]
+        return Response({"members": member_list})
+    
+
+class RemoveGroupMemberView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, group_id):
+        user_id = request.data.get("user_id")
+        if not user_id:
+            return Response({"error": "user_id is required"}, status=400)
+
+        try:
+            group = ChatGroup.objects.get(id=group_id)
+        except ChatGroup.DoesNotExist:
+            return Response({"error": "Group not found"}, status=404)
+
+        try:
+            member = GroupMember.objects.get(group=group, user__id=user_id)
+        except GroupMember.DoesNotExist:
+            return Response({"error": "User is not a member of this group"}, status=404)
+
+        member.delete()
+        return Response({"message": "Member removed successfully"}, status=200)

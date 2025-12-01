@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from django.contrib.auth.models import User
-from .models import FriendRequest, Friendship, Post, Comment, Share, ChatMessage
+from .models import FriendRequest, Friendship, GroupMessage, Post, Comment, Share, ChatMessage
 from authentication.serializers import UserSerializer
 
 class FriendRequestSerializer(serializers.ModelSerializer):
@@ -49,3 +49,8 @@ class ChatMessageSerializer(serializers.ModelSerializer):
         model = ChatMessage
         fields = ["id", "sender", "receiver", "message", "timestamp"]
 
+
+class GroupMessageSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = GroupMessage
+        fields = ["id", "group", "sender", "message", "timestamp"]
