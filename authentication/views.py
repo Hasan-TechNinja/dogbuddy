@@ -5,12 +5,10 @@ from .serializers import ProfessionalInformationSerializer, ProfileSerializer, U
 from django.contrib.auth.models import User
 import random
 from django.core.mail import send_mail
-
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status, permissions
 from django.conf import settings
-from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.exceptions import TokenError
 from django.contrib.auth.password_validation import validate_password
@@ -103,7 +101,8 @@ class RegistrationView(APIView):
             if playfulness_level is None:
                 return Response({'error': 'Playfulness Level is required for normal account type.'}, status=status.HTTP_400_BAD_REQUEST)
             if location is None:
-                return Response({'error': 'Location is required for normal account type.'}, status=status.HTTP_400_BAD_REQUEST)
+                # return Response({'error': 'Location is required for normal account type.'}, status=status.HTTP_400_BAD_REQUEST)
+                pass
 
             # Save relevant fields on profile
             profile.dog_name = pet_name
@@ -151,9 +150,12 @@ class RegistrationView(APIView):
                 profile=profile,
                 name=professional_name,
                 experience=experience,
-                dog_size_worked_with=dog_size_worked_with,
                 about=about,
             )
+
+            professional_info.dog_size_worked_with.set(dog_size_worked_with)
+            professional_info.save()
+
 
         profile.save()
 

@@ -27,18 +27,20 @@ class Profile(models.Model):
             models.UniqueConstraint(fields=['user'], name='unique_user_profile')
         ]
 
-DOG_SIZE_CHOICES = [
-    ('small', 'Small'),
-    ('medium', 'Medium'),
-    ('large', 'Large'),
-    ('all', 'All')
-]
+class DogSize(models.Model):
+    key = models.CharField(max_length=20, unique=True)
+    label = models.CharField(max_length=50)
+
+    def __str__(self):
+        return self.label
+
+
 class ProfessionalInformation(models.Model):
     profile = models.OneToOneField(Profile, on_delete=models.CASCADE, related_name='professional_info')
     name = models.CharField(max_length=100)
     experience = models.CharField(max_length=10)
     about = models.TextField(max_length=500)
-    dog_size_worked_with = models.CharField(max_length=50, choices=DOG_SIZE_CHOICES, default='all')
+    dog_size_worked_with = models.ManyToManyField(DogSize, related_name="professionals")
 
 
 class EmailVerification(models.Model):
