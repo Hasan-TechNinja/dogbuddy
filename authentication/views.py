@@ -13,6 +13,8 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.exceptions import TokenError
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
+from django.utils import timezone
+from datetime import timedelta
 
 # Create your views here.
 
@@ -61,6 +63,11 @@ class RegistrationView(APIView):
         set_password = request.data.get('password')
         confirm_password = request.data.get('confirm_password')
         account_type = request.data.get('type')
+        
+        # Get common fields for all account types
+        name = request.data.get('name')
+        phone = request.data.get('phone')
+        share_info = request.data.get('share_info', False)  # Default to False if not provided
 
         if not email or not set_password or not confirm_password:
             return Response({'error': 'Email and password are required.'}, status=status.HTTP_400_BAD_REQUEST)
@@ -90,6 +97,12 @@ class RegistrationView(APIView):
 
         profile, _ = Profile.objects.get_or_create(user=user)
         profile.account_type = account_type
+        
+        # Set common fields
+        if name:
+            profile.name = name
+        if phone:
+            profile.phone = phone
 
         if account_type == 'normal':
             pet_name = request.data.get('pet_name')
@@ -146,15 +159,17 @@ class RegistrationView(APIView):
             if about is None:
                 return Response({'error': 'About is required for this account type.'}, status=status.HTTP_400_BAD_REQUEST)
 
+            # If dog_size_worked_with is a list, convert to comma-separated string
+            if isinstance(dog_size_worked_with, list):
+                dog_size_worked_with = ', '.join(dog_size_worked_with)
+
             professional_info = ProfessionalInformation.objects.create(
                 profile=profile,
                 name=professional_name,
                 experience=experience,
                 about=about,
+                dog_size_worked_with=dog_size_worked_with
             )
-
-            professional_info.dog_size_worked_with.set(dog_size_worked_with)
-            professional_info.save()
 
 
         profile.save()
@@ -169,7 +184,7 @@ class RegistrationView(APIView):
             fail_silently=False,
         )
 
-        EmailVerification.objects.create(user=user, code=code)
+        EmailVerification.objects.create(user=user, code=code, share_info=share_info)
         return Response({'message': 'User registered successfully, please verify your email.'}, status=status.HTTP_201_CREATED)
 
 
@@ -184,6 +199,11 @@ class EmailVerificationView(APIView):
         try:
             user = User.objects.get(email = email)
             email_verification = EmailVerification.objects.get(user = user, code = code)
+
+            # Check if OTP is expired
+            if email_verification.is_expired():
+                email_verification.delete()
+                return Response({'error': 'OTP has expired. Please request a new one.'}, status=status.HTTP_400_BAD_REQUEST)
 
             user.is_active = True
             user.save()
@@ -209,10 +229,12 @@ class LoginView(APIView):
                 return Response({'error': 'Invalid credentials.'}, status=status.HTTP_400_BAD_REQUEST)
             if not user.is_active:
                 return Response({'error': 'Account is not active. Please verify your email.'}, status=status.HTTP_400_BAD_REQUEST)
+            user_id = user.id
             refresh = RefreshToken.for_user(user)
             access_token = str(refresh.access_token)
 
             return Response({
+                'user_id': user_id,
                 'refresh': str(refresh),
                 'access': access_token
             }, status=status.HTTP_200_OK)
@@ -256,6 +278,63 @@ class LogoutView(APIView):
             )
 
 
+class ResendOTPView(APIView):
+    permission_classes = [permissions.AllowAny]
+
+    def post(self, request):
+        email = request.data.get('email')
+
+        if not email:
+            return Response({'error': 'Email is required.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            user = User.objects.get(email=email)
+            
+            # Check if there's an existing OTP record
+            email_verification = EmailVerification.objects.filter(user=user).first()
+            
+            if email_verification:
+                # Check cooldown period (60 seconds)
+                if email_verification.last_sent_at:
+                    time_since_last_send = timezone.now() - email_verification.last_sent_at
+                    if time_since_last_send < timedelta(seconds=60):
+                        remaining_seconds = 60 - int(time_since_last_send.total_seconds())
+                        return Response(
+                            {'error': f'Please wait {remaining_seconds} seconds before requesting another OTP.'},
+                            status=status.HTTP_429_TOO_MANY_REQUESTS
+                        )
+            
+            # Generate new OTP code
+            code = random.randint(10000, 99999)
+
+            # Send email
+            try:
+                send_mail(
+                    subject='OTP Verification Code',
+                    message=f'Your verification code is {code}. This code will expire in 10 minutes.',
+                    from_email=settings.DEFAULT_FROM_EMAIL,
+                    recipient_list=[email],
+                    fail_silently=False,
+                )
+            except Exception as e:
+                return Response({'error': 'Failed to send email. Please try again later.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+            # Update or create EmailVerification record
+            # Note: We need to manually set expires_at because update_or_create with defaults won't trigger save()
+            if email_verification:
+                email_verification.code = code
+                email_verification.expires_at = timezone.now() + timedelta(minutes=10)
+                email_verification.last_sent_at = timezone.now()
+                email_verification.save()
+            else:
+                EmailVerification.objects.create(user=user, code=code)
+
+            return Response({'message': 'OTP sent successfully to your email.'}, status=status.HTTP_200_OK)
+            
+        except User.DoesNotExist:
+            return Response({'error': 'Email not found.'}, status=status.HTTP_400_BAD_REQUEST)
+
+
 class PasswordResetRequestView(APIView):
     permission_classesn = [permissions.AllowAny]
 
@@ -268,7 +347,7 @@ class PasswordResetRequestView(APIView):
 
             send_mail(
                 subject='Password Reset Request',
-                message=f'Your password reset code is {code}',
+                message=f'Your password reset code is {code}. This code will expire in 10 minutes.',
                 from_email=settings.DEFAULT_FROM_EMAIL,
                 recipient_list=[email],
                 fail_silently=False,
@@ -292,6 +371,12 @@ class PasswordResetConfirmView(APIView):
         try:
             user = User.objects.get(email = email)
             email_verification = EmailVerification.objects.get(user = user, code = code)
+            
+            # Check if OTP is expired
+            if email_verification.is_expired():
+                email_verification.delete()
+                return Response({'error': 'OTP has expired. Please request a new one.'}, status=status.HTTP_400_BAD_REQUEST)
+            
             if email_verification:
                 return Response({'message': 'Code verified successfully. now you can reset your password.'}, status=status.HTTP_200_OK)
 

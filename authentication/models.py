@@ -1,6 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import User
 from django.utils import timezone
+from datetime import timedelta
 
 # Create your models here.
 
@@ -27,12 +28,6 @@ class Profile(models.Model):
             models.UniqueConstraint(fields=['user'], name='unique_user_profile')
         ]
 
-class DogSize(models.Model):
-    key = models.CharField(max_length=20, unique=True)
-    label = models.CharField(max_length=50)
-
-    def __str__(self):
-        return self.label
 
 
 class ProfessionalInformation(models.Model):
@@ -40,7 +35,7 @@ class ProfessionalInformation(models.Model):
     name = models.CharField(max_length=100)
     experience = models.CharField(max_length=10)
     about = models.TextField(max_length=500)
-    dog_size_worked_with = models.ManyToManyField(DogSize, related_name="professionals")
+    dog_size_worked_with = models.CharField(max_length=200, blank=True, null=True, help_text="Comma-separated dog sizes (e.g., 'small', 'small, large', 'small, large, medium')")
 
 
 class EmailVerification(models.Model):
@@ -58,5 +53,13 @@ class EmailVerification(models.Model):
             models.Index(fields=["expires_at"]),
         ]
 
+    def save(self, *args, **kwargs):
+        # Set expiration time to 10 minutes from now if not already set
+        if not self.expires_at:
+            self.expires_at = timezone.now() + timedelta(minutes=10)
+        super().save(*args, **kwargs)
+
     def is_expired(self):
+        if self.expires_at is None:
+            return False
         return timezone.now() > self.expires_at
