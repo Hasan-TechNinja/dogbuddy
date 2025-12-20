@@ -30,6 +30,7 @@ class PetInfo(models.Model):
     weight = models.PositiveIntegerField(default=0)
     size = models.CharField(max_length=10, choices=SIZE_CHOICES, default='medium')
     date_of_birth = models.DateField(auto_now_add=False, blank=True, null=True)
+    breed = models.CharField(max_length=100, blank=True, null=True)
     medical_records = models.FileField(upload_to='medical_records/', null=True, blank=True)
     adoption_documents = models.FileField(upload_to='adoption_documents/', null=True, blank=True)
     description = models.TextField(null=True, blank=True)
