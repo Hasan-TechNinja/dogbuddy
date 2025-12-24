@@ -105,44 +105,10 @@ class RegistrationView(APIView):
             profile.phone = phone
 
         if account_type == 'normal':
-            pet_name = request.data.get('pet_name')
-            playfulness_level = request.data.get('playfulness_level')
-            location = request.data.get('location')
-
-            if pet_name is None:
-                return Response({'error': 'Pet name is required for normal account type.'}, status=status.HTTP_400_BAD_REQUEST)
-            if playfulness_level is None:
-                return Response({'error': 'Playfulness Level is required for normal account type.'}, status=status.HTTP_400_BAD_REQUEST)
-            if location is None:
-                # return Response({'error': 'Location is required for normal account type.'}, status=status.HTTP_400_BAD_REQUEST)
-                pass
-
-            # Save relevant fields on profile
-            profile.dog_name = pet_name
-            # only set if fields exist on profile model
-            if hasattr(profile, 'playfulness_level'):
-                profile.playfulness_level = playfulness_level
-            if hasattr(profile, 'location'):
-                profile.location = location
-            profile.save()
-
-            # Create PetInfo and attach to the newly created user (owner=user).
-            # Use attribute checks to avoid mismatched field names between environments.
-            pet = PetInfo(owner=user)
-            if hasattr(pet, 'name'):
-                pet.name = pet_name
-            if hasattr(pet, 'pet_name'):
-                pet.pet_name = pet_name
-            if hasattr(pet, 'playfulness_level'):
-                pet.playfulness_level = playfulness_level
-            if hasattr(pet, 'location'):
-                pet.location = location
-            # optional additional pet fields
-            if hasattr(pet, 'pet_breed'):
-                pet.pet_breed = request.data.get('pet_breed', '')
-            if hasattr(pet, 'pet_age'):
-                pet.pet_age = request.data.get('pet_age', '')
-            pet.save()
+            # For normal users, we no longer auto-create dog profile during registration
+            # They will create it manually after login
+            # Just save the profile without dog data
+            pass
 
         if account_type in ['dog_coach', 'dog_sitter']:
             professional_name = request.data.get('professional_name')
@@ -229,14 +195,23 @@ class LoginView(APIView):
                 return Response({'error': 'Invalid credentials.'}, status=status.HTTP_400_BAD_REQUEST)
             if not user.is_active:
                 return Response({'error': 'Account is not active. Please verify your email.'}, status=status.HTTP_400_BAD_REQUEST)
+            
             user_id = user.id
             refresh = RefreshToken.for_user(user)
             access_token = str(refresh.access_token)
+            
+            # Get user profile data
+            profile = Profile.objects.filter(user=user).first()
+            profile_data = None
+            if profile:
+                profile_serializer = ProfileSerializer(profile)
+                profile_data = profile_serializer.data
 
             return Response({
                 'user_id': user_id,
                 'refresh': str(refresh),
-                'access': access_token
+                'access': access_token,
+                'profile': profile_data
             }, status=status.HTTP_200_OK)
                 
         except User.DoesNotExist:

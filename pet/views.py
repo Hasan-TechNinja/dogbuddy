@@ -9,11 +9,39 @@ from rest_framework.views import APIView
 
 class PetInfoView(APIView):
     permission_classes = [permissions.IsAuthenticated]
+    
     def get(self, request):
         user = request.user
         pet_info = get_object_or_404(PetInfo, owner = user)
         serializer = PetInfoSerializer(pet_info, many=False)
         return Response(serializer.data, status=status.HTTP_200_OK)
+    
+    def post(self, request):
+        """Create a dog profile for the user"""
+        user = request.user
+        
+        # Check if user already has a dog profile
+        if PetInfo.objects.filter(owner=user).exists():
+            return Response(
+                {'error': 'Dog profile already exists. Use PUT to update.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        serializer = PetInfoSerializer(data=request.data)
+        if serializer.is_valid():
+            # Save the dog profile
+            pet_info = serializer.save(owner=user)
+            
+            # Update user's profile to mark dog profile as created
+            # Import Profile model at the top if not already imported
+            from authentication.models import Profile
+            profile = Profile.objects.filter(user=user).first()
+            if profile and profile.account_type == 'normal':
+                profile.has_dog_profile = True
+                profile.save()
+            
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
 
     def put(self, request):

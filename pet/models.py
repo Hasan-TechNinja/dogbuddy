@@ -6,14 +6,14 @@ from datetime import date
 # Create your models here.
 
 SIZE_CHOICES = [
-    ('small', 'Small'),
-    ('medium', 'Medium'),
-    ('large', 'Large'),
+    ('Small', 'Small'),
+    ('Medium', 'Medium'),
+    ('Large', 'Large'),
 ]
 
 GENDER_CHOICES = [
-    ('male', 'Male'),
-    ('female', 'Female'),
+    ('Male', 'Male'),
+    ('Female', 'Female'),
 ]
 
 DOG_MODE = [
@@ -44,6 +44,13 @@ class PetInfo(models.Model):
     image3 = models.ImageField(upload_to='pet_images/', null=True, blank=True)
     image4 = models.ImageField(upload_to='pet_images/', null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
+
+    def save(self, *args, **kwargs):
+        if self.gender:
+            self.gender = self.gender.capitalize()
+        if self.size:
+            self.size = self.size.capitalize()
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return self.name

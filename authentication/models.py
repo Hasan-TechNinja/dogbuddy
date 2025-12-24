@@ -16,10 +16,24 @@ class Profile(models.Model):
     name = models.CharField(max_length=100, blank=True, null=True)
     account_type = models.CharField(max_length=20,choices=ACCOUNT_TYPE_CHOICES,default='normal')
     phone = models.CharField(max_length=100, blank=True, null=True)
+    has_dog_profile = models.BooleanField(default=False, help_text="Indicates if user has completed dog profile setup")
     created_at = models.DateTimeField(auto_now_add=True)
+
+    def save(self, *args, **kwargs):
+        # Auto-set has_dog_profile for coaches and sitters (they don't need dog profiles)
+        if self.account_type in ['dog_coach', 'dog_sitter']:
+            self.has_dog_profile = True
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return f"{self.user.username} - {self.get_account_type_display()}"
+
+    @property
+    def is_profile_complete(self):
+        """Check if user has completed required profile setup"""
+        if self.account_type in ['dog_coach', 'dog_sitter']:
+            return self.has_dog_profile and hasattr(self, 'professional_info')
+        return self.has_dog_profile
 
     class Meta:
         verbose_name = 'Profile'
@@ -35,7 +49,13 @@ class ProfessionalInformation(models.Model):
     name = models.CharField(max_length=100)
     experience = models.CharField(max_length=10)
     about = models.TextField(max_length=500)
-    dog_size_worked_with = models.CharField(max_length=200, blank=True, null=True, help_text="Comma-separated dog sizes (e.g., 'small', 'small, large', 'small, large, medium')")
+    dog_size_worked_with = models.CharField(max_length=200, blank=True, null=True, help_text="Comma-separated dog sizes (e.g., 'Small', 'Small, Large', 'Small, Large, Medium')")
+
+    def save(self, *args, **kwargs):
+        if self.dog_size_worked_with:
+            sizes = [s.strip().capitalize() for s in self.dog_size_worked_with.split(',')]
+            self.dog_size_worked_with = ', '.join(sizes)
+        super().save(*args, **kwargs)
 
 
 class EmailVerification(models.Model):
