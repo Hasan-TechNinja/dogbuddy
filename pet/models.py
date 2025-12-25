@@ -2,6 +2,8 @@ from django.db import models
 from django.contrib.auth.models import User
 from django.core.validators import MinValueValidator, MaxValueValidator
 from datetime import date
+from datetime import date
+from dateutil.relativedelta import relativedelta
 
 # Create your models here.
 
@@ -68,6 +70,47 @@ class PetInfo(models.Model):
             years -= 1
 
         return years
+    
+    @property
+    def age_in_months(self):
+        """Return age in total months."""
+        if not self.date_of_birth:
+            return None
+        
+        today = date.today()
+        delta = relativedelta(today, self.date_of_birth)
+        return delta.years * 12 + delta.months
+    
+    @property
+    def life_stage(self):
+        """Determine life stage based on age and size"""
+        age_months = self.age_in_months
+        
+        if age_months is None:
+            return None
+        
+        # Life stage varies by size
+        if self.size == 'Small':
+            if age_months < 12:
+                return 'Puppy'
+            elif age_months < 84:  # 7 years
+                return 'Adult'
+            else:
+                return 'Senior'
+        elif self.size == 'Medium':
+            if age_months < 12:
+                return 'Puppy'
+            elif age_months < 84:  # 7 years
+                return 'Adult'
+            else:
+                return 'Senior'
+        else:  # Large
+            if age_months < 15:
+                return 'Puppy'
+            elif age_months < 72:  # 6 years
+                return 'Adult'
+            else:
+                return 'Senior'
     
 
 class Event(models.Model):
