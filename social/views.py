@@ -5,7 +5,7 @@ from django.shortcuts import get_object_or_404
 from django.contrib.auth.models import User
 from django.db.models import Q
 from .models import ChatGroup, ChatMessage, FriendRequest, Friendship, GroupMember, Post, Comment, Share
-from .serializers import ChatMessageSerializer, FriendRequestSerializer, FriendshipSerializer, PostSerializer, CommentSerializer, ShareSerializer
+from .serializers import ChatMessageSerializer, FriendRequestSerializer, FriendshipSerializer, PostSerializer, CommentSerializer, ShareSerializer, UserFriendStatusSerializer
 from authentication.serializers import ProfileSerializer, UserSerializer
 from authentication.models import Profile
 
@@ -108,6 +108,16 @@ class GeneralUserListView(APIView):
     def get(self, request):
         users = Profile.objects.filter(account_type='normal')
         serializer = ProfileSerializer(users, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    
+    
+class UserFriendStatusListView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        # Get all profiles except the current user's profile
+        profiles = Profile.objects.exclude(user=request.user)
+        serializer = UserFriendStatusSerializer(profiles, many=True, context={'request': request})
         return Response(serializer.data, status=status.HTTP_200_OK)
     
     

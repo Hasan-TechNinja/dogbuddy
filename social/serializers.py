@@ -2,6 +2,8 @@ from rest_framework import serializers
 from django.contrib.auth.models import User
 from .models import FriendRequest, Friendship, GroupMessage, Post, Comment, Share, ChatMessage
 from authentication.serializers import UserSerializer
+from authentication.serializers import ProfileSerializer
+from django.db.models import Q
 
 class FriendRequestSerializer(serializers.ModelSerializer):
     from_user = UserSerializer(read_only=True)
@@ -54,3 +56,37 @@ class GroupMessageSerializer(serializers.ModelSerializer):
     class Meta:
         model = GroupMessage
         fields = ["id", "group", "sender", "message", "timestamp"]
+
+
+class UserFriendStatusSerializer(ProfileSerializer):
+    friend_status = serializers.SerializerMethodField()
+
+    class Meta(ProfileSerializer.Meta):
+        fields = ProfileSerializer.Meta.fields + ['friend_status']
+
+    def get_friend_status(self, obj):
+        request = self.context.get('request')
+        if not request or not request.user.is_authenticated:
+            return "none"
+        
+        user = request.user
+        other_user = obj.user
+
+        if user == other_user:
+            return "self"
+
+        # Check if they are friends
+        if Friendship.objects.filter(
+            Q(user1=user, user2=other_user) | Q(user1=other_user, user2=user)
+        ).exists():
+            return "friend"
+
+        # Check if friend request sent
+        if FriendRequest.objects.filter(from_user=user, to_user=other_user).exists():
+            return "pending"
+
+        # Check if friend request received
+        if FriendRequest.objects.filter(from_user=other_user, to_user=user).exists():
+            return "received"
+
+        return "none"
