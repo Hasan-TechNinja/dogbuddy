@@ -1,4 +1,6 @@
 from django.shortcuts import render, get_object_or_404
+
+from pet.serializers import PetInfoSerializer
 from .models import Profile, EmailVerification, ProfessionalInformation
 from pet.models import PetInfo
 from .serializers import ProfessionalInformationSerializer, ProfileSerializer, UserSerializer
@@ -27,18 +29,29 @@ class ProfileView(APIView):
         except Profile.DoesNotExist:
             return Response({'error': 'Profile not found.'}, status=status.HTTP_404_NOT_FOUND)
 
-        # Retrieve associated professional info if applicable
+        # Professional info
         professional_info = None
         if profile.account_type in ['dog_coach', 'dog_sitter']:
             professional_info = ProfessionalInformation.objects.filter(profile=profile).first()
 
+        # Pets owned by the user
+        pets = PetInfo.objects.filter(owner=request.user)
+        pet_serializer = PetInfoSerializer(pets, many=True)
+
+        # Base profile data
         serializer = ProfileSerializer(profile)
         data = serializer.data
 
-        if professional_info:
-            data['professional_information'] = ProfessionalInformationSerializer(professional_info).data
-        else:
-            data['professional_information'] = None
+        # Add extra fields
+        data['professional_information'] = (
+            ProfessionalInformationSerializer(professional_info).data if professional_info else None
+        )
+        data['pets'] = pet_serializer.data  # list of pets with name + location
+
+        # Optional: derive general location (e.g. from first pet or profile)
+        data['dog_home_location'] = (
+            pets.first().location if pets.exists() and pets.first().location else getattr(profile, 'location', None)
+        )
 
         return Response(data, status=status.HTTP_200_OK)
 

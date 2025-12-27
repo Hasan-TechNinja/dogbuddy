@@ -6,10 +6,20 @@ from .models import DOG_MODE, Event
 class PetInfoSerializer(serializers.ModelSerializer):
     age = serializers.ReadOnlyField()
     life_stage = serializers.ReadOnlyField()
+    owner_name = serializers.SerializerMethodField()
+    owner_id = serializers.ReadOnlyField(source='owner.id')
+
     class Meta:
         model = PetInfo
         fields = "__all__"
         read_only_fields = ["id", "owner"]
+
+    def get_owner_name(self, obj):
+        from authentication.models import Profile
+        profile = Profile.objects.filter(user=obj.owner).first()
+        if profile and profile.name:
+            return profile.name
+        # return obj.owner.username
 
     def to_internal_value(self, data):
         if 'gender' in data and data['gender']:

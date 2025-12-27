@@ -1,11 +1,12 @@
 from django.shortcuts import render, get_object_or_404
 from django.db.models import Q
-from social.models import Friendship
+from social.models import Friendship, User
 from . models import PetInfo, Event
 from . serializers import PetInfoSerializer, PetStatusSerializer, PetStatusUpdateSerializer, EventSerializer
 from rest_framework.response import Response
 from rest_framework import status, permissions
 from rest_framework.views import APIView
+from rest_framework.exceptions import NotFound
 
 # Create your views here.
 
@@ -56,27 +57,36 @@ class PetInfoView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
 
-class PetDetailsView(APIView):
-    def get(self, request, id):
-        pet_info = PetInfo.objects.get(id=id)
-        serializer = PetInfoSerializer(pet_info)
-        
+class PetDetailsByUserView(APIView):
+    def get(self, request, user_id):
+        # Get the user
+        try:
+            pet_owner = User.objects.get(id=user_id)
+        except User.DoesNotExist:
+            raise NotFound("User not found")
+
+        # Get all pets belonging to that user
+        pets = PetInfo.objects.filter(owner=pet_owner)
+        if not pets.exists():
+            raise NotFound("This user has no pets.")
+
+        serializer = PetInfoSerializer(pets, many=True)
         data = serializer.data
-        
+
+        # Check friendship status
         current_user = request.user
-        pet_owner = pet_info.owner
-        
         is_friend = False
+
         if current_user.is_authenticated and current_user != pet_owner:
-            # Check if friendship exists in either direction
             is_friend = Friendship.objects.filter(
                 Q(user1=current_user, user2=pet_owner) |
                 Q(user1=pet_owner, user2=current_user)
             ).exists()
-        
-        # Add the is_friend field to the response
-        data['is_friend'] = is_friend
-        
+
+        # Add the is_friend field to each pet record
+        for item in data:
+            item['is_friend'] = is_friend
+
         return Response(data)
 
 
