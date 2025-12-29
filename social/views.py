@@ -67,6 +67,19 @@ class RejectFriendRequestView(APIView):
         friend_request.delete()
         return Response({'message': 'Friend request rejected'}, status=status.HTTP_200_OK)
 
+
+class CancelFriendRequestView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, request_id):
+        friend_request = get_object_or_404(FriendRequest, id=request_id)
+
+        if friend_request.from_user != request.user:
+            return Response({'error': 'You are not authorized to cancel this request'}, status=status.HTTP_403_FORBIDDEN)
+
+        friend_request.delete()
+        return Response({'message': 'Friend request cancelled'}, status=status.HTTP_200_OK)
+
 class UnfriendView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 

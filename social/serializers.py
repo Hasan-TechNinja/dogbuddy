@@ -4,6 +4,9 @@ from .models import FriendRequest, Friendship, GroupMessage, Post, Comment, Shar
 from authentication.serializers import UserSerializer
 from authentication.serializers import ProfileSerializer
 from django.db.models import Q
+from .utils import get_distance_between_locations
+from geopy.distance import geodesic
+
 
 class FriendRequestSerializer(serializers.ModelSerializer):
     from_user = UserSerializer(read_only=True)
@@ -60,32 +63,47 @@ class GroupMessageSerializer(serializers.ModelSerializer):
 
 class UserFriendStatusSerializer(ProfileSerializer):
     friend_status = serializers.SerializerMethodField()
+    distance = serializers.SerializerMethodField()
+    location = serializers.CharField(read_only=True)
+    profile_image_url = serializers.SerializerMethodField()
 
     class Meta(ProfileSerializer.Meta):
-        fields = ProfileSerializer.Meta.fields + ['friend_status']
+        fields = ProfileSerializer.Meta.fields + [
+            'friend_status', 'distance', 'location', 'profile_image_url'
+        ]
+
+    def get_profile_image_url(self, obj):
+        request = self.context.get('request')
+        if obj.profile_image and request:
+            return request.build_absolute_uri(obj.profile_image.url)
+        return None
+
+    def get_distance(self, obj):
+        request = self.context.get('request')
+        user_profile = getattr(request.user, 'profile', None)
+        if not user_profile or not user_profile.location or not obj.location:
+            return None
+        return get_distance_between_locations(user_profile.location, obj.location)
 
     def get_friend_status(self, obj):
         request = self.context.get('request')
         if not request or not request.user.is_authenticated:
             return "none"
-        
+
         user = request.user
         other_user = obj.user
 
         if user == other_user:
             return "self"
 
-        # Check if they are friends
         if Friendship.objects.filter(
             Q(user1=user, user2=other_user) | Q(user1=other_user, user2=user)
         ).exists():
             return "friend"
 
-        # Check if friend request sent
         if FriendRequest.objects.filter(from_user=user, to_user=other_user).exists():
             return "pending"
 
-        # Check if friend request received
         if FriendRequest.objects.filter(from_user=other_user, to_user=user).exists():
             return "received"
 

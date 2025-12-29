@@ -12,12 +12,14 @@ ACCOUNT_TYPE_CHOICES = [
 ]
 
 class Profile(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='profile')
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
     name = models.CharField(max_length=100, blank=True, null=True)
     account_type = models.CharField(max_length=20,choices=ACCOUNT_TYPE_CHOICES,default='normal')
     phone = models.CharField(max_length=100, blank=True, null=True)
     has_dog_profile = models.BooleanField(default=False, help_text="Indicates if user has completed dog profile setup")
     created_at = models.DateTimeField(auto_now_add=True)
+    location = models.CharField(max_length=100, blank=True, null=True)
+    profile_image = models.ImageField(upload_to='profile_images/', blank=True, null=True)
 
     def save(self, *args, **kwargs):
         # Auto-set has_dog_profile for coaches and sitters (they don't need dog profiles)
