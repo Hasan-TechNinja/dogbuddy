@@ -55,7 +55,7 @@ class ProfileView(APIView):
 
         return Response(data, status=status.HTTP_200_OK)
 
-    def put(self, request):
+    def patch(self, request):
         try:
             profile = Profile.objects.get(user=request.user)
         except Profile.DoesNotExist:
@@ -397,3 +397,42 @@ class DeleteAccount(APIView):
         user.delete()
         
         return Response({'message': 'Account deleted successfully.'},status=status.HTTP_204_NO_CONTENT)
+    
+
+
+class ProfileDetailsView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request, id):
+        try:
+            profile = Profile.objects.get(user__id=id)
+        except Profile.DoesNotExist:
+            return Response({'error': 'Profile not found.'}, status=status.HTTP_404_NOT_FOUND)
+        # Professional info
+        professional_info = None
+        if profile.account_type in ['dog_coach', 'dog_sitter']:
+            professional_info = ProfessionalInformation.objects.filter(profile=profile).first()
+
+        # Pets owned by the user
+        pets = PetInfo.objects.filter(owner=request.user)
+        pet_serializer = PetInfoSerializer(pets, many=True)
+
+        # Base profile data
+        serializer = ProfileSerializer(profile)
+        data = serializer.data
+
+        # Add extra fields
+        data['professional_information'] = (
+            ProfessionalInformationSerializer(professional_info).data if professional_info else None
+        )
+        data['pets'] = pet_serializer.data  # list of pets with name + location
+
+        # Optional: derive general location (e.g. from first pet or profile)
+        data['dog_home_location'] = (
+            pets.first().location if pets.exists() and pets.first().location else getattr(profile, 'location', None)
+        )
+
+        return Response(data, status=status.HTTP_200_OK)
+
+        serializer = ProfileSerializer(profile)
+        return Response(serializer.data, status=status.HTTP_200_OK)

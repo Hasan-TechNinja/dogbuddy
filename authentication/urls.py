@@ -12,6 +12,7 @@ urlpatterns = [
     path('resend/otp/', views.PasswordResetRequestView.as_view(), name='password_reset'),
     path('password-reset-confirm/', views.PasswordResetConfirmView.as_view(), name='password_reset_confirm'),
     path('password-change/', views.PasswordChangeView.as_view(), name='password_change'),
-    path('delete/', views.DeleteAccount.as_view(), name = 'delete-user')
+    path('delete/', views.DeleteAccount.as_view(), name = 'delete-user'),
+    path('others/profile/<int:id>/', views.ProfileDetailsView.as_view(), name='other-user-profile'),
 
 ]

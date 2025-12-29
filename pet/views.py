@@ -15,7 +15,9 @@ class PetInfoView(APIView):
     
     def get(self, request):
         user = request.user
-        pet_info = get_object_or_404(PetInfo, owner = user)
+        pet_info = PetInfo.objects.filter(owner=user).first()
+        if not pet_info:
+            return Response({'detail': 'No pet profile found.'}, status=status.HTTP_404_NOT_FOUND)
         serializer = PetInfoSerializer(pet_info, many=False)
         return Response(serializer.data, status=status.HTTP_200_OK)
     
@@ -26,7 +28,7 @@ class PetInfoView(APIView):
         # Check if user already has a dog profile
         if PetInfo.objects.filter(owner=user).exists():
             return Response(
-                {'error': 'Dog profile already exists. Use PUT to update.'},
+                {'error': 'Dog profile already exists. Use PATCH to update.'},
                 status=status.HTTP_400_BAD_REQUEST
             )
         
@@ -36,7 +38,6 @@ class PetInfoView(APIView):
             pet_info = serializer.save(owner=user)
             
             # Update user's profile to mark dog profile as created
-            # Import Profile model at the top if not already imported
             from authentication.models import Profile
             profile = Profile.objects.filter(user=user).first()
             if profile and profile.account_type == 'normal':
@@ -46,15 +47,23 @@ class PetInfoView(APIView):
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
-
-    def put(self, request):
+    def patch(self, request):
+        """Partially update the user's dog profile"""
         user = request.user
-        pet_info = get_object_or_404(PetInfo, owner = user)
-        serializer = PetInfoSerializer(pet_info, data = request.data, partial=True)
+        pet_info = PetInfo.objects.filter(owner=user).first()
+        if not pet_info:
+            return Response({'detail': 'No pet profile found.'}, status=status.HTTP_404_NOT_FOUND)
+
+        # Make sure request.data is mutable
+        data = request.data.copy()
+
+        serializer = PetInfoSerializer(pet_info, data=data, partial=True)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
     
 
 class PetDetailsByUserView(APIView):
