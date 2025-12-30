@@ -16,6 +16,7 @@ urlpatterns = [
     path("post/<int:post_id>/comments/", CommentView.as_view(), name='comment'),
     path("post/<int:post_id>/share/", SharePostView.as_view(), name='share'),
     path("post/<int:id>/", PostDetailView.as_view(), name="post-detail"),
+    path("post/<int:post_id>/comments/list/", views.PostCommentsView.as_view(), name="post-comments-list"),
     path("users/", GeneralUserListView.as_view(), name="general-user-list"),
     path("users/friend-status/", UserFriendStatusListView.as_view(), name="user-friend-status-list"),
     path("profile/<int:user_id>/", ProfileView.as_view(), name="profile-view"),

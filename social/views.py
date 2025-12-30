@@ -194,6 +194,24 @@ class PostDetailView(APIView):
             serializer.save(user=request.user)
             return Response(serializer.data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+
+class PostCommentsView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request, post_id):
+        post = get_object_or_404(Post, id=post_id)
+        post_serializer = PostSerializer(post)
+
+        comments = Comment.objects.filter(post=post).order_by("-created_at")
+        comment_serializer = CommentSerializer(comments, many=True)
+
+        data = {
+            "post": post_serializer.data,
+            "comments": comment_serializer.data
+        }
+
+        return Response(data, status=status.HTTP_200_OK)
 
 
 class LikePostView(APIView):
