@@ -29,11 +29,18 @@ class PostSerializer(serializers.ModelSerializer):
     likes_count = serializers.IntegerField(read_only=True)
     comments_count = serializers.IntegerField(read_only=True)
     shares_count = serializers.IntegerField(read_only=True)
+    liked = serializers.SerializerMethodField()
 
     class Meta:
         model = Post
         fields = "__all__"
         read_only_fields = ["user"]
+
+    def get_liked(self, obj):
+        request = self.context.get('request') if self.context else None
+        if not request or not getattr(request, 'user', None) or not request.user.is_authenticated:
+            return False
+        return request.user in obj.likes.all()
 
 
 class CommentSerializer(serializers.ModelSerializer):

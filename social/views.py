@@ -4,6 +4,7 @@ from rest_framework import status, permissions
 from django.shortcuts import get_object_or_404
 from django.contrib.auth.models import User
 from django.db.models import Q
+from stripe import Review
 from .models import ChatGroup, ChatMessage, FriendRequest, Friendship, GroupMember, Post, Comment, Share
 from .serializers import ChatMessageSerializer, FriendRequestSerializer, FriendshipSerializer, PostSerializer, CommentSerializer, ShareSerializer, UserFriendStatusSerializer
 from authentication.serializers import ProfileSerializer, UserSerializer
@@ -156,9 +157,26 @@ class PostView(APIView):
 
     def get(self, request):
         post = Post.objects.filter(user = request.user)
-        serializer = PostSerializer(post, many = True)
+        serializer = PostSerializer(post, many = True, context={"request": request})
 
         return Response(serializer.data, status=status.HTTP_200_OK)
+    
+
+# class PostDetailView(APIView):
+#     permission_classes = [permissions.IsAuthenticated]
+
+#     def get(self, request, id):
+#         post = get_object_or_404(Post, id=id)
+#         serializer = PostSerializer(post, context={"request": request})
+
+#         review = Comment.objects.filter(post=post)
+#         review_serializer = CommentSerializer(review, many=True)
+
+#         data = {
+#             "post": serializer.data,
+#             "comments": review_serializer.data
+#         }
+#         return Response(data, status=status.HTTP_200_OK)
     
 
 class PostDetailView(APIView):
@@ -166,12 +184,12 @@ class PostDetailView(APIView):
 
     def get(self, request, id):
         post = get_object_or_404(Post, id=id, user=request.user)
-        serializer = PostSerializer(post)
+        serializer = PostSerializer(post, context={"request": request})
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     def put(self, request, id):
         post = get_object_or_404(Post, id=id, user=request.user)
-        serializer = PostSerializer(post, data=request.data, partial=True)
+        serializer = PostSerializer(post, data=request.data, partial=True, context={"request": request})
         if serializer.is_valid():
             serializer.save(user=request.user)
             return Response(serializer.data, status=status.HTTP_200_OK)
