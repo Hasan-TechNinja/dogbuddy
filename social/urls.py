@@ -4,9 +4,9 @@ from . import views
 
 urlpatterns = [
     path('friend-request/send/', SendFriendRequestView.as_view(), name='send-friend-request'),
-    path('friend-request/accept/<int:request_id>/', AcceptFriendRequestView.as_view(), name='accept-friend-request'),
-    path('friend-request/reject/<int:request_id>/', RejectFriendRequestView.as_view(), name='reject-friend-request'),
-    path('friend-request/cancel/<int:request_id>/', CancelFriendRequestView.as_view(), name='cancel-friend-request'),
+    path('friend-request/accept/<int:user_id>/', AcceptFriendRequestView.as_view(), name='accept-friend-request'),
+    path('friend-request/reject/<int:user_id>/', RejectFriendRequestView.as_view(), name='reject-friend-request'),
+    path('friend-request/cancel/<int:user_id>/', CancelFriendRequestView.as_view(), name='cancel-friend-request'),
     path('unfriend/<int:user_id>/', UnfriendView.as_view(), name='unfriend'),
     path('friends/', FriendListView.as_view(), name='friend-list'),
     path('friend-request/pending/', PendingRequestsView.as_view(), name='pending-requests'),
