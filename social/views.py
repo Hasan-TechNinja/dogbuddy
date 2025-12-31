@@ -201,7 +201,7 @@ class PostCommentsView(APIView):
 
     def get(self, request, post_id):
         post = get_object_or_404(Post, id=post_id)
-        post_serializer = PostSerializer(post)
+        post_serializer = PostSerializer(post, context={"request": request})
 
         comments = Comment.objects.filter(post=post).order_by("-created_at")
         comment_serializer = CommentSerializer(comments, many=True)

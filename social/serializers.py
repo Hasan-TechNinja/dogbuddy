@@ -6,6 +6,8 @@ from authentication.serializers import ProfileSerializer
 from django.db.models import Q
 from .utils import get_distance_between_locations
 from geopy.distance import geodesic
+from pet.models import PetInfo
+from pet.serializers import PetInfoSerializer
 
 
 class FriendRequestSerializer(serializers.ModelSerializer):
@@ -32,7 +34,7 @@ class PostSerializer(serializers.ModelSerializer):
     liked = serializers.SerializerMethodField()
 
     name = serializers.CharField(source="user.profile.name", read_only=True)
-    profile_picture = serializers.ImageField(source="user.profile.picture", read_only=True)
+    profile_image = serializers.SerializerMethodField()
 
     class Meta:
         model = Post
@@ -44,6 +46,29 @@ class PostSerializer(serializers.ModelSerializer):
         if not request or not getattr(request, 'user', None) or not request.user.is_authenticated:
             return False
         return request.user in obj.likes.all()
+
+    def get_profile_image(self, obj):
+        request = self.context.get('request') if self.context else None
+        post_user = obj.user
+        profile = getattr(post_user, 'profile', None)
+        image_url = None
+
+        if profile:
+            acct = getattr(profile, 'account_type', 'normal')
+            if acct == 'normal':
+                pet = PetInfo.objects.filter(owner=post_user).order_by('-created_at').first()
+                if pet and getattr(pet, 'image', None):
+                    image_url = pet.image.url
+                elif getattr(profile, 'profile_image', None):
+                    image_url = profile.profile_image.url
+            else:
+                if getattr(profile, 'profile_image', None):
+                    image_url = profile.profile_image.url
+
+        if image_url and request:
+            # return request.build_absolute_uri(image_url)
+            return request.build_absolute_uri(image_url)
+        return image_url
 
 
 

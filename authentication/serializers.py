@@ -13,7 +13,7 @@ class ProfileSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Profile
-        fields = ['user', 'name', 'account_type', 'phone', 'has_dog_profile', 'is_profile_complete', 'created_at']
+        fields = ['user', 'name', 'account_type', 'phone', 'profile_image', 'has_dog_profile', 'is_profile_complete', 'created_at']
 
 class ProfessionalInformationSerializer(serializers.ModelSerializer):
     class Meta:
