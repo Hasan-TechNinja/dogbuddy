@@ -31,6 +31,9 @@ class PostSerializer(serializers.ModelSerializer):
     shares_count = serializers.IntegerField(read_only=True)
     liked = serializers.SerializerMethodField()
 
+    name = serializers.CharField(source="user.profile.name", read_only=True)
+    profile_picture = serializers.ImageField(source="user.profile.picture", read_only=True)
+
     class Meta:
         model = Post
         fields = "__all__"
@@ -41,6 +44,7 @@ class PostSerializer(serializers.ModelSerializer):
         if not request or not getattr(request, 'user', None) or not request.user.is_authenticated:
             return False
         return request.user in obj.likes.all()
+
 
 
 class CommentSerializer(serializers.ModelSerializer):

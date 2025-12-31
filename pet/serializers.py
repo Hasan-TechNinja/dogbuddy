@@ -39,7 +39,45 @@ class PetStatusUpdateSerializer(serializers.Serializer):
 
 
 class EventSerializer(serializers.ModelSerializer):
+    name = serializers.CharField(source="organizer.profile.name", read_only=True)
+    profile_image = serializers.SerializerMethodField()
+    enrolled = serializers.SerializerMethodField()
     class Meta: 
         model = Event
         fields = "__all__"
         read_only_fields = ["organizer", "created_at"]
+
+
+    def get_profile_image(self, obj):
+        request = self.context.get('request') if self.context else None
+        post_user = obj.organizer
+        profile = getattr(post_user, 'profile', None)
+        image_url = None
+
+        if profile:
+            acct = getattr(profile, 'account_type', 'normal')
+            if acct == 'normal':
+                pet = PetInfo.objects.filter(owner=post_user).order_by('-created_at').first()
+                if pet and getattr(pet, 'image', None):
+                    image_url = pet.image.url
+                elif getattr(profile, 'profile_image', None):
+                    image_url = profile.profile_image.url
+            else:
+                if getattr(profile, 'profile_image', None):
+                    image_url = profile.profile_image.url
+
+        if image_url and request:
+            # return request.build_absolute_uri(image_url)
+            return request.build_absolute_uri(image_url)
+        return image_url
+    
+
+    def get_enrolled(self, obj):
+        """Return True if current user is enrolled in this event."""
+        request = self.context.get('request') if self.context else None
+        if not request or not getattr(request, 'user', None) or not request.user.is_authenticated:
+            return False
+        
+        # Adjust according to your model relation:
+        # assuming you have a ManyToMany field like `participants = models.ManyToManyField(User, related_name="events")`
+        return obj.participants.filter(id=request.user.id).exists()
