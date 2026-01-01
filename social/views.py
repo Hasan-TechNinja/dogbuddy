@@ -161,6 +161,13 @@ class PostView(APIView):
 
         return Response(serializer.data, status=status.HTTP_200_OK)
     
+class AllPostsView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        posts = Post.objects.all().order_by("-created_at")
+        serializer = PostSerializer(posts, many=True, context={"request": request})
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
 # class PostDetailView(APIView):
 #     permission_classes = [permissions.IsAuthenticated]
