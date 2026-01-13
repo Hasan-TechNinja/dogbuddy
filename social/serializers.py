@@ -73,10 +73,35 @@ class PostSerializer(serializers.ModelSerializer):
 
 
 class CommentSerializer(serializers.ModelSerializer):
+    name = serializers.CharField(source="user.profile.name", read_only=True)
+    profile_image = serializers.SerializerMethodField()
+
     class Meta:
         model = Comment
         fields = "__all__"
         read_only_fields = ["post", "user"]
+
+    def get_profile_image(self, obj):
+        request = self.context.get('request') if self.context else None
+        comment_user = obj.user
+        profile = getattr(comment_user, 'profile', None)
+        image_url = None
+
+        if profile:
+            acct = getattr(profile, 'account_type', 'normal')
+            if acct == 'normal':
+                pet = PetInfo.objects.filter(owner=comment_user).order_by('-created_at').first()
+                if pet and getattr(pet, 'image', None):
+                    image_url = pet.image.url
+                elif getattr(profile, 'profile_image', None):
+                    image_url = profile.profile_image.url
+            else:
+                if getattr(profile, 'profile_image', None):
+                    image_url = profile.profile_image.url
+
+        if image_url and request:
+            return request.build_absolute_uri(image_url)
+        return image_url
 
 
 class ShareSerializer(serializers.ModelSerializer):
