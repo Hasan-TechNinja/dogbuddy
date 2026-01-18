@@ -80,4 +80,4 @@ class EventSerializer(serializers.ModelSerializer):
         
         # Adjust according to your model relation:
         # assuming you have a ManyToMany field like `participants = models.ManyToManyField(User, related_name="events")`
-        return obj.participants.filter(id=request.user.id).exists()
+        return obj.enrolled_pets.filter(owner=request.user).exists()

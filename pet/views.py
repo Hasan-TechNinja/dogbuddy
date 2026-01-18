@@ -133,7 +133,7 @@ class EventCreateView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request):
-        serializer = EventSerializer(data = request.data)
+        serializer = EventSerializer(data = request.data, context={'request': request})
         if serializer.is_valid():
             serializer.save(organizer=request.user)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
@@ -146,7 +146,7 @@ class EventListView(APIView):
 
     def get(self, request):
         events = Event.objects.all()
-        serializer = EventSerializer(events, many=True)
+        serializer = EventSerializer(events, many=True, context={'request': request})
         return Response(serializer.data, status=status.HTTP_200_OK)
     
 
@@ -221,7 +221,7 @@ class EventDetailsView(APIView):
                 status=status.HTTP_404_NOT_FOUND
             )
 
-        serializer = EventSerializer(event)
+        serializer = EventSerializer(event, context={'request': request})
         return Response(serializer.data, status=status.HTTP_200_OK)
     
 
@@ -239,6 +239,6 @@ class MyEventsView(APIView):
 
     def get(self, request):
         events = Event.objects.filter(organizer = request.user)
-        serializer = EventSerializer(events, many = True)
+        serializer = EventSerializer(events, many = True, context={'request': request})
 
         return Response(serializer.data, status=status.HTTP_200_OK)

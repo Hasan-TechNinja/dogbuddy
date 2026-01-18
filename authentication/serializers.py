@@ -10,10 +10,11 @@ class UserSerializer(serializers.ModelSerializer):
 class ProfileSerializer(serializers.ModelSerializer):
     user = UserSerializer(read_only=True)
     is_profile_complete = serializers.ReadOnlyField()
+    dog_profile_image = serializers.ImageField(read_only=True)
 
     class Meta:
         model = Profile
-        fields = ['user', 'name', 'account_type', 'phone', 'profile_image', 'has_dog_profile', 'is_profile_complete', 'created_at']
+        fields = ['user', 'name', 'account_type', 'phone', 'profile_image', 'has_dog_profile', 'is_profile_complete', 'created_at', 'dog_profile_image']
 
 class ProfessionalInformationSerializer(serializers.ModelSerializer):
     class Meta:

@@ -5,6 +5,7 @@ from . models import PetInfo, Event
 
 class PetInfoAdmin(admin.ModelAdmin):
     list_display = (
+        'id',
         'owner',
         'name',
         'playfulness_level',

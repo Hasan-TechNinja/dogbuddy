@@ -1,7 +1,9 @@
 from django.shortcuts import render, get_object_or_404
+from django.db.models import Q
 
 from pet.serializers import PetInfoSerializer
 from .models import Profile, EmailVerification, ProfessionalInformation
+from social.models import Friendship
 from pet.models import PetInfo
 from .serializers import ProfessionalInformationSerializer, ProfileSerializer, UserSerializer
 from django.contrib.auth.models import User
@@ -408,13 +410,14 @@ class ProfileDetailsView(APIView):
             profile = Profile.objects.get(user__id=id)
         except Profile.DoesNotExist:
             return Response({'error': 'Profile not found.'}, status=status.HTTP_404_NOT_FOUND)
+        
         # Professional info
         professional_info = None
         if profile.account_type in ['dog_coach', 'dog_sitter']:
             professional_info = ProfessionalInformation.objects.filter(profile=profile).first()
 
-        # Pets owned by the user
-        pets = PetInfo.objects.filter(owner=request.user)
+        # Pets owned by the profile owner (the 'others' user)
+        pets = PetInfo.objects.filter(owner=profile.user)
         pet_serializer = PetInfoSerializer(pets, many=True)
 
         # Base profile data
@@ -427,12 +430,22 @@ class ProfileDetailsView(APIView):
         )
         data['pets'] = pet_serializer.data  # list of pets with name + location
 
+        # Check friendship status
+        current_user = request.user
+        other_user = profile.user
+        is_friend = False
+
+        if current_user.is_authenticated and current_user != other_user:
+            is_friend = Friendship.objects.filter(
+                Q(user1=current_user, user2=other_user) |
+                Q(user1=other_user, user2=current_user)
+            ).exists()
+        
+        data['is_friend'] = is_friend
+
         # Optional: derive general location (e.g. from first pet or profile)
         data['dog_home_location'] = (
             pets.first().location if pets.exists() and pets.first().location else getattr(profile, 'location', None)
         )
 
         return Response(data, status=status.HTTP_200_OK)
-
-        serializer = ProfileSerializer(profile)
-        return Response(serializer.data, status=status.HTTP_200_OK)
