@@ -69,7 +69,14 @@ class CancelFriendRequestView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request, user_id):
-        friend_request = get_object_or_404(FriendRequest, from_user = request.user, to_user__id=user_id)
+        # Find a friend request between these two users (sent by current user or received from user_id)
+        friend_request = FriendRequest.objects.filter(
+            Q(from_user=request.user, to_user__id=user_id) |
+            Q(from_user__id=user_id, to_user=request.user)
+        ).first()
+
+        if not friend_request:
+            return Response({'error': "Friend request not found"}, status=status.HTTP_404_NOT_FOUND)
 
         friend_request.delete()
         return Response({'message': "Friend request cancelled"}, status=status.HTTP_200_OK)
@@ -115,7 +122,7 @@ class GeneralUserListView(APIView):
 
     def get(self, request):
         users = Profile.objects.filter(account_type='normal')
-        serializer = ProfileSerializer(users, many=True)
+        serializer = ProfileSerializer(users, many=True, context={'request': request})
         return Response(serializer.data, status=status.HTTP_200_OK)
     
     

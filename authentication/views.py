@@ -41,7 +41,7 @@ class ProfileView(APIView):
         pet_serializer = PetInfoSerializer(pets, many=True)
 
         # Base profile data
-        serializer = ProfileSerializer(profile)
+        serializer = ProfileSerializer(profile, context={'request': request})
         data = serializer.data
 
         # Add extra fields
@@ -63,7 +63,7 @@ class ProfileView(APIView):
         except Profile.DoesNotExist:
             return Response({'error': 'Profile not found.'}, status=status.HTTP_404_NOT_FOUND)
 
-        serializer = ProfileSerializer(profile, data=request.data, partial=True)
+        serializer = ProfileSerializer(profile, data=request.data, partial=True, context={'request': request})
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_200_OK)
@@ -218,9 +218,8 @@ class LoginView(APIView):
             # Get user profile data
             profile = Profile.objects.filter(user=user).first()
             profile_data = None
-            if profile:
-                profile_serializer = ProfileSerializer(profile)
-                profile_data = profile_serializer.data
+            profile_serializer = ProfileSerializer(profile, context={'request': request})
+            profile_data = profile_serializer.data
 
             return Response({
                 'user_id': user_id,
@@ -421,7 +420,7 @@ class ProfileDetailsView(APIView):
         pet_serializer = PetInfoSerializer(pets, many=True)
 
         # Base profile data
-        serializer = ProfileSerializer(profile)
+        serializer = ProfileSerializer(profile, context={'request': request})
         data = serializer.data
 
         # Add extra fields

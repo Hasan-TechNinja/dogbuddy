@@ -10,11 +10,21 @@ class UserSerializer(serializers.ModelSerializer):
 class ProfileSerializer(serializers.ModelSerializer):
     user = UserSerializer(read_only=True)
     is_profile_complete = serializers.ReadOnlyField()
-    dog_profile_image = serializers.ImageField(read_only=True)
+    dog_profile_image = serializers.SerializerMethodField()
 
     class Meta:
         model = Profile
         fields = ['user', 'name', 'account_type', 'phone', 'profile_image', 'has_dog_profile', 'is_profile_complete', 'created_at', 'dog_profile_image']
+
+    def get_dog_profile_image(self, obj):
+        from pet.models import PetInfo
+        request = self.context.get('request')
+        pet = PetInfo.objects.filter(owner=obj.user).order_by('-created_at').first()
+        if pet and pet.image:
+            if request:
+                return request.build_absolute_uri(pet.image.url)
+            return pet.image.url
+        return None
 
 class ProfessionalInformationSerializer(serializers.ModelSerializer):
     class Meta:
