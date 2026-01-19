@@ -58,18 +58,60 @@ class PetInfo(models.Model):
         return self.name
     
     @property
-    def age(self):
-        """Return age in whole years."""
+    def friendly_age(self):
+        """
+        Returns age as a friendly string:
+        - 0-11 months  → "3 months", "1 month", "0 months"
+        - 12+ months   → "1 year", "1.5 years", "2 years", "2.5 years", ...
+        """
         if not self.date_of_birth:
             return None
 
         today = date.today()
-        years = today.year - self.date_of_birth.year
+        birth = self.date_of_birth
 
-        if (today.month, today.day) < (self.date_of_birth.month, self.date_of_birth.day):
+        years = today.year - birth.year
+        months = today.month - birth.month
+        days = today.day - birth.day
+
+        # Adjust if birthday hasn't occurred this year
+        if (months, days) < (0, 0):
             years -= 1
+            months += 12
 
-        return years
+        # Total months since birth
+        total_months = years * 12 + months
+
+        if total_months < 12:
+            # 0–11 months
+            if total_months == 0:
+                return "0 months"
+            elif total_months == 1:
+                return "1 month"
+            else:
+                return f"{total_months} months"
+        else:
+            # 12+ months → show in years (with .5 steps)
+            years_decimal = total_months / 12
+
+            # Round to nearest 0 or 0.5
+            years_part = int(years_decimal)
+            decimal_part = years_decimal - years_part
+
+            if decimal_part < 0.25:
+                display = years_part
+            elif decimal_part < 0.75:
+                display = years_part + 0.5
+            else:
+                display = years_part + 1
+
+            # Format nicely
+            if display == 1:
+                return "1 year"
+            elif isinstance(display, float):
+                return f"{display:.1f} years"
+            else:
+                return f"{display} years"
     
     @property
     def age_in_months(self):
