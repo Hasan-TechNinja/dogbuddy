@@ -25,6 +25,6 @@ urlpatterns = [
     path('create-group/', CreateGroup.as_view(), name='create-group'),
     path('group/<int:group_id>/add-member/', JoinGroup.as_view(), name='add-group-member'),
     path('group/members/<int:group_id>/', views.GroupMembers.as_view(), name='group-members'),
-    path('group/<int:group_id>/remove-member/', views.RemoveGroupMemberView.as_view(), name='remove-group-member')
-
+    path('group/<int:group_id>/remove-member/', views.RemoveGroupMemberView.as_view(), name='remove-group-member'),
+    path('user/<int:user_id>/posts/', views.UserPostListView.as_view(), name='user-posts-list'),
 ]

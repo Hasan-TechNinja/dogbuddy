@@ -130,9 +130,16 @@ class UserFriendStatusListView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request):
-        # Get all profiles except the current user's profile
-        profiles = Profile.objects.exclude(user=request.user)
-        serializer = UserFriendStatusSerializer(profiles, many=True, context={'request': request})
+        # Exclude self + only users who completed dog profile setup
+        profiles = Profile.objects.exclude(user=request.user).filter(
+            has_dog_profile=True
+        )
+
+        serializer = UserFriendStatusSerializer(
+            profiles,
+            many=True,
+            context={'request': request}
+        )
         return Response(serializer.data, status=status.HTTP_200_OK)
     
     
@@ -355,3 +362,13 @@ class RemoveGroupMemberView(APIView):
 
         member.delete()
         return Response({"message": "Member removed successfully"}, status=200)
+    
+
+class UserPostListView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request, user_id):
+        user = get_object_or_404(User, id=user_id)
+        posts = Post.objects.filter(user=user).order_by("-created_at")
+        serializer = PostSerializer(posts, many=True, context={"request": request})
+        return Response(serializer.data, status=status.HTTP_200_OK)
