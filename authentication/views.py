@@ -3,7 +3,7 @@ from django.db.models import Q
 
 from pet.serializers import PetInfoSerializer
 from .models import Profile, EmailVerification, ProfessionalInformation
-from social.models import Friendship
+from social.models import FriendRequest, Friendship
 from pet.models import PetInfo
 from .serializers import ProfessionalInformationSerializer, ProfileSerializer, UserSerializer
 from django.contrib.auth.models import User
@@ -409,13 +409,13 @@ class ProfileDetailsView(APIView):
             profile = Profile.objects.get(user__id=id)
         except Profile.DoesNotExist:
             return Response({'error': 'Profile not found.'}, status=status.HTTP_404_NOT_FOUND)
-        
+
         # Professional info
         professional_info = None
         if profile.account_type in ['dog_coach', 'dog_sitter']:
             professional_info = ProfessionalInformation.objects.filter(profile=profile).first()
 
-        # Pets owned by the profile owner (the 'others' user)
+        # Pets owned by the profile owner
         pets = PetInfo.objects.filter(owner=profile.user)
         pet_serializer = PetInfoSerializer(pets, many=True)
 
@@ -427,24 +427,38 @@ class ProfileDetailsView(APIView):
         data['professional_information'] = (
             ProfessionalInformationSerializer(professional_info).data if professional_info else None
         )
-        data['pets'] = pet_serializer.data  # list of pets with name + location
+        data['pets'] = pet_serializer.data
 
-        # Check friendship status
+        # ── Improved friendship status ───────────────────────────────────────
         current_user = request.user
         other_user = profile.user
-        is_friend = False
 
-        if current_user.is_authenticated and current_user != other_user:
-            is_friend = Friendship.objects.filter(
-                Q(user1=current_user, user2=other_user) |
-                Q(user1=other_user, user2=current_user)
-            ).exists()
-        
-        data['is_friend'] = is_friend
+        if current_user == other_user:
+            friend_status = "self"
+        elif Friendship.objects.filter(
+            Q(user1=current_user, user2=other_user) |
+            Q(user1=other_user, user2=current_user)
+        ).exists():
+            friend_status = "friend"
+        elif FriendRequest.objects.filter(
+            from_user=current_user, to_user=other_user
+        ).exists():
+            friend_status = "pending"
+        elif FriendRequest.objects.filter(
+            from_user=other_user, to_user=current_user
+        ).exists():
+            friend_status = "received"
+        else:
+            friend_status = "none"
 
-        # Optional: derive general location (e.g. from first pet or profile)
+        data['friend_status'] = friend_status
+        # Optional: keep is_friend for backward compatibility (or remove it)
+        data['is_friend'] = (friend_status == "friend")
+
+        # Location fallback
         data['dog_home_location'] = (
-            pets.first().location if pets.exists() and pets.first().location else getattr(profile, 'location', None)
+            pets.first().location if pets.exists() and pets.first().location
+            else getattr(profile, 'location', None)
         )
 
         return Response(data, status=status.HTTP_200_OK)
