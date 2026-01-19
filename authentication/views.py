@@ -36,7 +36,7 @@ class ProfileView(APIView):
         if profile.account_type in ['dog_coach', 'dog_sitter']:
             professional_info = ProfessionalInformation.objects.filter(profile=profile).first()
 
-        # Pets owned by the user
+        # Pets owned by the user``
         pets = PetInfo.objects.filter(owner=request.user)
         pet_serializer = PetInfoSerializer(pets, many=True)
 

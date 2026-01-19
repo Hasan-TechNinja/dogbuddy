@@ -24,3 +24,9 @@ class ProfessionalInformationAdmin(admin.ModelAdmin):
         # 'dog_size_worked_with',
     )
 admin.site.register(ProfessionalInformation, ProfessionalInformationAdmin)
+
+
+admin.site.site_header = 'Dog Buddy Administration'
+admin.site.index_title = 'Dog Buddy Admin Portal'
+admin.site.site_title = 'Dog Buddy Administration'
+    
