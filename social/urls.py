@@ -27,4 +27,7 @@ urlpatterns = [
     path('group/members/<int:group_id>/', views.GroupMembers.as_view(), name='group-members'),
     path('group/<int:group_id>/remove-member/', views.RemoveGroupMemberView.as_view(), name='remove-group-member'),
     path('user/<int:user_id>/posts/', views.UserPostListView.as_view(), name='user-posts-list'),
+    path('my/groups/', views.MyGroupsListView.as_view(), name='my-groups'),
+    path('my/chat-users/', views.MyChatUsersListView.as_view(), name='my-chat-users'),
+    
 ]

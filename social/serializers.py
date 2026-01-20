@@ -1,9 +1,10 @@
 from rest_framework import serializers
 from django.contrib.auth.models import User
-from .models import FriendRequest, Friendship, GroupMessage, Post, Comment, Share, ChatMessage
+from .models import FriendRequest, Friendship, GroupMessage, Post, Comment, Share, ChatMessage, ChatGroup
 from authentication.serializers import UserSerializer
 from authentication.serializers import ProfileSerializer
-from django.db.models import Q
+from django.db.models import Q, Max
+from django.utils import timezone
 from .utils import get_distance_between_locations
 from geopy.distance import geodesic
 from pet.models import PetInfo
@@ -169,3 +170,101 @@ class UserFriendStatusSerializer(ProfileSerializer):
             return "received"
 
         return "none"
+
+
+class ChatUserListSerializer(UserFriendStatusSerializer):
+    unseen_count = serializers.SerializerMethodField()
+    last_message_time_ago = serializers.SerializerMethodField()
+
+    class Meta(UserFriendStatusSerializer.Meta):
+        fields = UserFriendStatusSerializer.Meta.fields + ['unseen_count', 'last_message_time_ago']
+
+    def get_unseen_count(self, obj):
+        request = self.context.get('request')
+        if not request or not request.user.is_authenticated:
+            return 0
+        return ChatMessage.objects.filter(
+            sender=obj.user,
+            receiver=request.user,
+            is_read=False
+        ).count()
+
+    def get_last_message_time_ago(self, obj):
+        request = self.context.get('request')
+        if not request or not request.user.is_authenticated:
+            return None
+        
+        last_msg = ChatMessage.objects.filter(
+            (Q(sender=request.user, receiver=obj.user) | Q(sender=obj.user, receiver=request.user))
+        ).order_by('-timestamp').first()
+
+        if last_msg:
+            return self._format_time_ago(last_msg.timestamp)
+        return None
+
+    def _format_time_ago(self, dt):
+        now = timezone.now()
+        diff = now - dt
+        seconds = diff.total_seconds()
+        
+        if seconds < 60:
+            return f"{int(seconds)}s ago"
+        minutes = seconds / 60
+        if minutes < 60:
+            return f"{int(minutes)}min ago"
+        hours = minutes / 60
+        if hours < 24:
+            return f"{int(hours)}h ago"
+        days = hours / 24
+        return f"{int(days)}d ago"
+
+
+class ChatGroupListSerializer(serializers.ModelSerializer):
+    unseen_count = serializers.SerializerMethodField()
+    last_message_time_ago = serializers.SerializerMethodField()
+    image = serializers.SerializerMethodField()
+
+    class Meta:
+        model = ChatGroup
+        fields = ['id', 'name', 'image', 'unseen_count', 'last_message_time_ago']
+
+    def get_image(self, obj):
+        request = self.context.get('request')
+        if obj.image and request:
+            return request.build_absolute_uri(obj.image.url)
+        return None
+
+    def get_unseen_count(self, obj):
+        request = self.context.get('request')
+        if not request or not request.user.is_authenticated:
+            return 0
+        
+        try:
+            membership = obj.members.get(user=request.user)
+            return obj.messages.filter(
+                timestamp__gt=membership.last_read_timestamp
+            ).exclude(sender=request.user).count()
+        except:
+            return 0
+
+    def get_last_message_time_ago(self, obj):
+        last_msg = obj.messages.order_by('-timestamp').first()
+        if last_msg:
+            return self._format_time_ago(last_msg.timestamp)
+        return None
+
+    def _format_time_ago(self, dt):
+        now = timezone.now()
+        diff = now - dt
+        seconds = diff.total_seconds()
+        
+        if seconds < 60:
+            return f"{int(seconds)}s ago"
+        minutes = seconds / 60
+        if minutes < 60:
+            return f"{int(minutes)}min ago"
+        hours = minutes / 60
+        if hours < 24:
+            return f"{int(hours)}h ago"
+        days = hours / 24
+        return f"{int(days)}d ago"

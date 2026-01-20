@@ -49,20 +49,20 @@ class PetInfoSerializer(serializers.ModelSerializer):
 
         if total_months < 12:
             if total_months == 0:
-                return "0 months"
+                return "0 Months"
             elif total_months == 1:
-                return "1 month"
+                return "1 Month"
             else:
-                return f"{total_months} months"
+                return f"{total_months} Months"
         else:
             whole_years = total_months // 12
             remaining_months = total_months % 12
 
             if remaining_months < 6:
-                unit = "year" if whole_years == 1 else "years"
+                unit = "year" if whole_years == 1 else "Years"
                 return f"{whole_years} {unit}"
             else:
-                unit = "year" if whole_years == 0 else "years"
+                unit = "year" if whole_years == 0 else "Years"
                 return f"{whole_years}.5 {unit}"
 
     def get_owner_name(self, obj):

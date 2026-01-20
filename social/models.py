@@ -1,5 +1,6 @@
 from django.db import models
 from django.contrib.auth import get_user_model
+from django.utils import timezone
 
 User = get_user_model()
 
@@ -77,6 +78,7 @@ class ChatMessage(models.Model):
     receiver = models.ForeignKey(User, related_name="received_messages", on_delete=models.CASCADE)
     message = models.TextField()
     timestamp = models.DateTimeField(auto_now_add=True)
+    is_read = models.BooleanField(default=False)
 
     def __str__(self):
         return f"Message from {self.sender_id} to {self.receiver_id} at {self.timestamp}"
@@ -84,6 +86,7 @@ class ChatMessage(models.Model):
 
 class ChatGroup(models.Model):
     name = models.CharField(max_length=255, unique=True)
+    image = models.ImageField(upload_to='group_images/', blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
@@ -94,6 +97,7 @@ class GroupMember(models.Model):
     group = models.ForeignKey(ChatGroup, on_delete=models.CASCADE, related_name="members")
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     joined_at = models.DateTimeField(auto_now_add=True)
+    last_read_timestamp = models.DateTimeField(default=timezone.now)
 
     class Meta:
         unique_together = ("group", "user")

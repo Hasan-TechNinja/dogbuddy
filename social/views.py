@@ -6,7 +6,7 @@ from django.contrib.auth.models import User
 from django.db.models import Q
 from stripe import Review
 from .models import ChatGroup, ChatMessage, FriendRequest, Friendship, GroupMember, Post, Comment, Share
-from .serializers import ChatMessageSerializer, FriendRequestSerializer, FriendshipSerializer, PostSerializer, CommentSerializer, ShareSerializer, UserFriendStatusSerializer
+from .serializers import ChatMessageSerializer, FriendRequestSerializer, FriendshipSerializer, PostSerializer, CommentSerializer, ShareSerializer, UserFriendStatusSerializer, ChatUserListSerializer, ChatGroupListSerializer
 from authentication.serializers import ProfileSerializer, UserSerializer
 from authentication.models import Profile
 
@@ -183,22 +183,6 @@ class AllPostsView(APIView):
         serializer = PostSerializer(posts, many=True, context={"request": request})
         return Response(serializer.data, status=status.HTTP_200_OK)
 
-# class PostDetailView(APIView):
-#     permission_classes = [permissions.IsAuthenticated]
-
-#     def get(self, request, id):
-#         post = get_object_or_404(Post, id=id)
-#         serializer = PostSerializer(post, context={"request": request})
-
-#         review = Comment.objects.filter(post=post)
-#         review_serializer = CommentSerializer(review, many=True)
-
-#         data = {
-#             "post": serializer.data,
-#             "comments": review_serializer.data
-#         }
-#         return Response(data, status=status.HTTP_200_OK)
-    
 
 class PostDetailView(APIView):
     permission_classes = [permissions.IsAuthenticated]
@@ -372,3 +356,42 @@ class UserPostListView(APIView):
         posts = Post.objects.filter(user=user).order_by("-created_at")
         serializer = PostSerializer(posts, many=True, context={"request": request})
         return Response(serializer.data, status=status.HTTP_200_OK)
+    
+
+class MyGroupsListView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        memberships = GroupMember.objects.filter(user=request.user).select_related("group")
+        groups = [m.group for m in memberships]
+        serializer = ChatGroupListSerializer(groups, many=True, context={"request": request})
+        return Response({"groups": serializer.data}, status=status.HTTP_200_OK)
+    
+
+class MyChatUsersListView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        user = request.user
+
+        # Fetch users who have had a chat with the current user
+        chat_partners = User.objects.filter(
+            Q(sent_messages__receiver=user) | Q(received_messages__sender=user)
+        ).distinct()
+
+        # Filter out self
+        chat_partners = chat_partners.exclude(id=user.id)
+
+        # Map to profiles
+        profiles = Profile.objects.filter(user__in=chat_partners)
+
+        serializer = ChatUserListSerializer(
+            profiles,
+            many=True,
+            context={"request": request}
+        )
+
+        return Response(
+            {"users": serializer.data},
+            status=status.HTTP_200_OK
+        )
