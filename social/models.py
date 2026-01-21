@@ -85,7 +85,7 @@ class ChatMessage(models.Model):
 
 
 class ChatGroup(models.Model):
-    name = models.CharField(max_length=255, unique=True)
+    name = models.CharField(max_length=255, unique=False)
     image = models.ImageField(upload_to='group_images/', blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
 

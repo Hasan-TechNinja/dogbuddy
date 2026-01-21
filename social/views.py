@@ -287,14 +287,16 @@ class CreateGroup(APIView):
 
     def post(self, request):
         name = request.data.get("name")
+        image = request.data.get('image')
         if not name:
             return Response({"error": "Name required"}, status=400)
 
-        group = ChatGroup.objects.create(name=name)
+        group = ChatGroup.objects.create(name=name, image=image)
         GroupMember.objects.create(group=group, user=request.user)
         return Response({
             "group_id": group.id,
             "name": group.name,
+            "image": request.build_absolute_uri(group.image.url) if group.image else None,
             "admin": request.user.username
             }, status=201)
 
