@@ -44,7 +44,6 @@ INSTALLED_APPS = [
     'authentication',
     'pet',
     'social',
-    'payment',
 
     'rest_framework',
     'rest_framework_simplejwt',
@@ -183,10 +182,8 @@ REST_FRAMEWORK = {
 
 }
 
-STRIPE_SECRET_KEY = config("STRIPE_SECRET_KEY")
-STRIPE_WEBHOOK_SECRET = config("STRIPE_WEBHOOK_SECRET")
 
-
+# JWT settings
 SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(days=7),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=7),

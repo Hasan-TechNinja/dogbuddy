@@ -4,7 +4,6 @@ from rest_framework import status, permissions
 from django.shortcuts import get_object_or_404
 from django.contrib.auth.models import User
 from django.db.models import Q
-from stripe import Review
 from .models import ChatGroup, ChatMessage, FriendRequest, Friendship, GroupMember, Post, Comment, Share
 from .serializers import ChatMessageSerializer, FriendRequestSerializer, FriendshipSerializer, PostSerializer, CommentSerializer, ShareSerializer, UserFriendStatusSerializer, ChatUserListSerializer, ChatGroupListSerializer
 from authentication.serializers import ProfileSerializer, UserSerializer
