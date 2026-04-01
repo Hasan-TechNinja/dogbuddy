@@ -1,0 +1,184 @@
+.
+├── authentication
+│   ├── admin.py
+│   ├── apps.py
+│   ├── __init__.py
+│   ├── migrations
+│   │   ├── 0001_initial.pyc
+│   │   ├── 0002_alter_profile_name.pyc
+│   │   ├── 0003_emailverification.pyc
+│   │   ├── 0004_emailverification_location_and_more.pyc
+│   │   ├── 0005_remove_profile_location_and_more.pyc
+│   │   ├── 0006_remove_profile_dog_name.pyc
+│   │   ├── 0007_profile_phone.pyc
+│   │   ├── 0008_dogsize_and_more.pyc
+│   │   ├── 0009_remove_professionalinformation_dog_size_worked_with_and_more.py
+│   │   ├── 0010_profile_has_dog_profile.py
+│   │   ├── 0011_alter_professionalinformation_dog_size_worked_with.py
+│   │   ├── 0012_profile_location_profile_profile_image.py
+│   │   ├── 0013_alter_profile_user.py
+│   │   ├── 0014_remove_profile_location_profile_latitude_and_more.py
+│   │   ├── 0015_remove_profile_latitude_remove_profile_longitude_and_more.py
+│   │   ├── 0016_remove_emailverification_authenticat_user_id_90ea9e_idx_and_more.py
+│   │   ├── 0017_remove_emailverification_authenticat_user_id_91131e_idx_and_more.py
+│   │   └── __init__.py
+│   ├── models.py
+│   ├── serializers.py
+│   ├── signals.py
+│   ├── tests.py
+│   ├── urls.py
+│   ├── validators.py
+│   └── views.py
+├── db.sqlite3
+├── dogbuddy
+│   ├── asgi.py
+│   ├── __init__.py
+│   ├── settings.py
+│   ├── urls.py
+│   └── wsgi.py
+├── folder_structure.txt
+├── manage.py
+├── media
+│   ├── adoption_documents
+│   │   ├── images_1.jpeg
+│   │   ├── images_2.jpeg
+│   │   ├── images_2_YgZ1l3j.jpeg
+│   │   ├── report_88_IzO5k2I.pdf
+│   │   ├── report_88.pdf
+│   │   ├── report_88_R2pI3ZP.pdf
+│   │   ├── report_88_uk5kKNu.pdf
+│   │   ├── Yellow_Black_Brush_Streetwear_Brand_Logo_bNVnCsw.png
+│   │   ├── Yellow_Black_Brush_Streetwear_Brand_Logo.png
+│   │   └── Yellow_Black_Brush_Streetwear_Brand_Logo_WsjhM4l.png
+│   ├── event_images
+│   │   ├── scaled_1000000034.jpg
+│   │   ├── scaled_1000000042.jpg
+│   │   ├── scaled_1000000043.jpg
+│   │   └── scaled_1000000043_YsLxBuc.jpg
+│   ├── group_images
+│   │   ├── appstore_HwMm3bs.jpg
+│   │   └── appstore.jpg
+│   ├── medical_records
+│   │   ├── images_2.jpeg
+│   │   ├── images_2_TcTwZvn.jpeg
+│   │   ├── images_4.jpeg
+│   │   ├── images_5.jpeg
+│   │   ├── report_88_1FETTyC.pdf
+│   │   ├── report_88.pdf
+│   │   ├── report_88_RNRj43F.pdf
+│   │   ├── solo-leveling-jpeg.jpg
+│   │   ├── Yellow_Black_Brush_Streetwear_Brand_Logo_J8cO3ez.png
+│   │   └── Yellow_Black_Brush_Streetwear_Brand_Logo.png
+│   ├── pet_images
+│   │   ├── bradley-pelish-NPivaRqGFWw-unsplash.jpg
+│   │   ├── dummyproduct.png
+│   │   ├── grass-9197163.jpg
+│   │   ├── istockphoto-2158963864-612x612.jpg
+│   │   ├── scaled_1000000034.jpg
+│   │   ├── scaled_1000000034_qct6xZo.jpg
+│   │   ├── scaled_1000000035_2Me2LXl.jpg
+│   │   ├── scaled_1000000035.jpg
+│   │   ├── scaled_1000000035_JR3M7RY.jpg
+│   │   ├── scaled_1000000035_Ww6AOYz.jpg
+│   │   ├── scaled_1000000035_xvVtKuV.jpg
+│   │   ├── scaled_1000000036_9YSAdWT.jpg
+│   │   ├── scaled_1000000036_CtF0zpv.jpg
+│   │   ├── scaled_1000000036_hICqsBc.jpg
+│   │   ├── scaled_1000000036_ikwVO4p.jpg
+│   │   ├── scaled_1000000036.jpg
+│   │   ├── scaled_1000000036_K1hwY0Z.jpg
+│   │   ├── scaled_1000000036_zQoQVPc.jpg
+│   │   ├── scaled_1000000037_awP4Q6T.jpg
+│   │   ├── scaled_1000000037_EofZhpg.jpg
+│   │   ├── scaled_1000000037_JjEW1vI.jpg
+│   │   ├── scaled_1000000037.jpg
+│   │   ├── scaled_1000000037_lbaULGa.jpg
+│   │   ├── scaled_1000000037_P035DJN.jpg
+│   │   ├── scaled_1000000037_TCQIYFp.jpg
+│   │   ├── scaled_1000000038_Csdz8Y0.jpg
+│   │   ├── scaled_1000000038_e0S4blG.jpg
+│   │   ├── scaled_1000000038.jpg
+│   │   ├── scaled_1000000038_xWmDrgT.jpg
+│   │   ├── scaled_1000000039_gqrDs95.jpg
+│   │   ├── scaled_1000000039.jpg
+│   │   ├── scaled_1000000039_ND3sv93.jpg
+│   │   ├── scaled_1000000039_OTH8To7.jpg
+│   │   ├── scaled_1000000039_RqYh5MO.jpg
+│   │   ├── scaled_1000000042.jpg
+│   │   ├── scaled_1000000044.jpg
+│   │   ├── scaled_37_11MlQs2.jpg
+│   │   ├── scaled_37.jpg
+│   │   ├── scaled_38_cZfE5Bs.jpg
+│   │   ├── scaled_38.jpg
+│   │   ├── scaled_39.jpg
+│   │   ├── scaled_39_KFqgkHI.jpg
+│   │   ├── scaled_40.jpg
+│   │   ├── scaled_40_t4hCiGT.jpg
+│   │   └── Screenshot_from_2025-12-03_16-54-12.png
+│   ├── post
+│   │   ├── 149829015.png
+│   │   ├── bacalling.jpg
+│   │   ├── Media_1.jpeg
+│   │   ├── scaled_1000000039_1aii8up.jpg
+│   │   ├── scaled_1000000039_4VQ5GG2.jpg
+│   │   ├── scaled_1000000039_FetkRm9.jpg
+│   │   └── scaled_1000000039.jpg
+│   └── profile_images
+│       └── admin.jpg
+├── pet
+│   ├── admin.py
+│   ├── apps.py
+│   ├── __init__.py
+│   ├── migrations
+│   │   ├── 0001_initial.pyc
+│   │   ├── 0002_petinfo_breed.py
+│   │   ├── 0002_petinfo_location_petinfo_playfulness_level.pyc
+│   │   ├── 0003_alter_petinfo_gender_alter_petinfo_size.py
+│   │   ├── 0004_alter_petinfo_size.py
+│   │   ├── 0004_rename_image_petinfo_image0_and_more.pyc
+│   │   ├── 0005_rename_image0_petinfo_image_petinfo_status.pyc
+│   │   ├── 0006_petinfo_age_petinfo_points_petinfo_stars.pyc
+│   │   ├── 0007_alter_petinfo_status.pyc
+│   │   ├── 0008_remove_petinfo_age_petinfo_birth_day.pyc
+│   │   ├── 0009_rename_birth_day_petinfo_date_of_birth.pyc
+│   │   ├── 0010_events.pyc
+│   │   ├── 0011_rename_events_event.pyc
+│   │   ├── 0012_alter_event_cancellation_fee_alter_event_cost_and_more.pyc
+│   │   └── __init__.py
+│   ├── models.py
+│   ├── serializers.py
+│   ├── tests_capitalization.py
+│   ├── tests_events.py
+│   ├── tests.py
+│   ├── urls.py
+│   └── views.py
+├── requirements.txt
+├── social
+│   ├── admin.py
+│   ├── apps.py
+│   ├── consumers_group.py
+│   ├── consumers.py
+│   ├── __init__.py
+│   ├── middleware.py
+│   ├── migrations
+│   │   ├── 0001_initial.pyc
+│   │   ├── 0002_chatmessage.pyc
+│   │   ├── 0003_alter_chatmessage_options_remove_chatmessage_is_read.pyc
+│   │   ├── 0004_delete_chatmessage.pyc
+│   │   ├── 0005_chatmessage.pyc
+│   │   ├── 0006_alter_chatmessage_options_and_more.pyc
+│   │   ├── 0007_chatgroup_groupmessage_groupmember.pyc
+│   │   ├── 0008_chatgroup_image_chatmessage_is_read_and_more.py
+│   │   ├── 0009_alter_chatgroup_name.py
+│   │   └── __init__.py
+│   ├── models.py
+│   ├── routing.py
+│   ├── serializers.py
+│   ├── tests.py
+│   ├── urls.py
+│   ├── utils.py
+│   └── views.py
+├── static
+└── templates
+
+18 directories, 164 files
