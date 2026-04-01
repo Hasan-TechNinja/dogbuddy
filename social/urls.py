@@ -30,4 +30,5 @@ urlpatterns = [
     path('my/groups/', views.MyGroupsListView.as_view(), name='my-groups'),
     path('my/chat-users/', views.MyChatUsersListView.as_view(), name='my-chat-users'),
     path('user-distance/<int:user_id>/', views.UserDistanceView.as_view(), name='user-distance'),
+    path('nearby-users/', views.NearbyUsersView.as_view(), name='nearby-users'),
 ]

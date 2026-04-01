@@ -38,6 +38,54 @@ class UserDistanceView(APIView):
             "distance_km": distance
         })
 
+class NearbyUsersView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        radius_km = request.query_params.get('radius', 1)  # Default 1 km
+        try:
+            radius_km = float(radius_km)
+        except ValueError:
+            return Response({"error": "Invalid radius"}, status=400)
+
+        my_profile = getattr(request.user, 'profile', None)
+        if not my_profile or my_profile.latitude is None or my_profile.longitude is None:
+            return Response({"error": "Current user location not set"}, status=400)
+
+        my_lat = float(my_profile.latitude)
+        my_lon = float(my_profile.longitude)
+
+        # Basic filtering: Get profiles with location set
+        other_profiles = Profile.objects.exclude(user=request.user).exclude(
+            latitude__isnull=True, longitude__isnull=True
+        )
+
+        nearby_users = []
+        for profile in other_profiles:
+            dist = get_distance_between_points(
+                my_lat, my_lon, 
+                float(profile.latitude), float(profile.longitude)
+            )
+            if dist is not None and dist <= radius_km:
+                nearby_users.append({
+                    "id": profile.user.id,
+                    "username": profile.user.username,
+                    "name": profile.name,
+                    "image": request.build_absolute_uri(profile.profile_image.url) if profile.profile_image else None,
+                    "distance_km": dist,
+                    "latitude": float(profile.latitude),
+                    "longitude": float(profile.longitude)
+                })
+
+        # Sort by distance
+        nearby_users.sort(key=lambda x: x['distance_km'])
+
+        return Response({
+            "count": len(nearby_users),
+            "radius_km": radius_km,
+            "nearby_users": nearby_users
+        })
+
 class SendFriendRequestView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
