@@ -142,10 +142,30 @@ class UserFriendStatusSerializer(ProfileSerializer):
 
     def get_distance(self, obj):
         request = self.context.get('request')
-        user_profile = getattr(request.user, 'profile', None)
-        if not user_profile or not user_profile.location or not obj.location:
+        if not request or not request.user.is_authenticated:
             return None
-        return get_distance_between_locations(user_profile.location, obj.location)
+            
+        user_profile = getattr(request.user, 'profile', None)
+        other_profile = obj
+        
+        if not user_profile or not other_profile:
+            return None
+            
+        # Try coordinates first
+        from .utils import get_distance_between_points
+        distance = get_distance_between_points(
+            user_profile.latitude, user_profile.longitude,
+            other_profile.latitude, other_profile.longitude
+        )
+        
+        if distance is not None:
+            return distance
+            
+        # Fallback to named locations
+        if user_profile.location and other_profile.location:
+            return get_distance_between_locations(user_profile.location, other_profile.location)
+            
+        return None
 
     def get_friend_status(self, obj):
         request = self.context.get('request')

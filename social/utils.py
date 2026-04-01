@@ -18,9 +18,6 @@ LOCATION_COORDINATES = {
 def get_distance_between_locations(location1: str, location2: str):
     """
     Returns the distance in kilometers between two fixed location names.
-
-    If one or both locations are not in LOCATION_COORDINATES,
-    returns None (so your serializer can handle it gracefully).
     """
     coord1 = LOCATION_COORDINATES.get(location1)
     coord2 = LOCATION_COORDINATES.get(location2)
@@ -29,4 +26,14 @@ def get_distance_between_locations(location1: str, location2: str):
         return None  # Unknown location(s)
 
     distance_km = geodesic(coord1, coord2).km
+    return round(distance_km, 2)
+
+def get_distance_between_points(lat1, lon1, lat2, lon2):
+    """
+    Returns the distance in kilometers between two latitude/longitude points.
+    """
+    if None in (lat1, lon1, lat2, lon2):
+        return None
+    
+    distance_km = geodesic((lat1, lon1), (lat2, lon2)).km
     return round(distance_km, 2)

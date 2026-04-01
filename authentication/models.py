@@ -19,6 +19,8 @@ class Profile(models.Model):
     has_dog_profile = models.BooleanField(default=False, help_text="Indicates if user has completed dog profile setup")
     created_at = models.DateTimeField(auto_now_add=True)
     location = models.CharField(max_length=100, blank=True, null=True)
+    latitude = models.DecimalField(max_digits=22, decimal_places=16, null=True, blank=True)
+    longitude = models.DecimalField(max_digits=22, decimal_places=16, null=True, blank=True)
     profile_image = models.ImageField(upload_to='profile_images/', blank=True, null=True)
 
     def save(self, *args, **kwargs):

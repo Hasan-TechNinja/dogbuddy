@@ -8,6 +8,35 @@ from .models import ChatGroup, ChatMessage, FriendRequest, Friendship, GroupMemb
 from .serializers import ChatMessageSerializer, FriendRequestSerializer, FriendshipSerializer, PostSerializer, CommentSerializer, ShareSerializer, UserFriendStatusSerializer, ChatUserListSerializer, ChatGroupListSerializer
 from authentication.serializers import ProfileSerializer, UserSerializer
 from authentication.models import Profile
+from .utils import get_distance_between_points
+
+class UserDistanceView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request, user_id):
+        target_user = get_object_or_404(User, id=user_id)
+        
+        my_profile = getattr(request.user, 'profile', None)
+        target_profile = getattr(target_user, 'profile', None)
+        
+        if not my_profile or not target_profile:
+            return Response({"error": "Profile not found"}, status=404)
+            
+        distance = get_distance_between_points(
+            my_profile.latitude, my_profile.longitude,
+            target_profile.latitude, target_profile.longitude
+        )
+        
+        if distance is None:
+            return Response({"error": "Location not set for one or both users"}, status=400)
+            
+        return Response({
+            "target_user_id": user_id,
+            "target_username": target_user.username,
+            "name": target_profile.name,
+            "image": request.build_absolute_uri(target_profile.profile_image.url) if target_profile.profile_image else None,
+            "distance_km": distance
+        })
 
 class SendFriendRequestView(APIView):
     permission_classes = [permissions.IsAuthenticated]
