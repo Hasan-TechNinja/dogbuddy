@@ -209,3 +209,5 @@ __marimo__/
 
 **/migrations/*.py
 !**/migrations/__init__.py
+
+nett4dogs-firebase-adminsdk-fbsvc-58a8df73aa.json
