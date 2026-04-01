@@ -473,6 +473,7 @@ class MyGroupsListView(APIView):
         
         serializer = ChatGroupListSerializer(paginated_groups, many=True, context={"request": request})
         return paginator.get_paginated_response(serializer.data)
+
     
 
 class MyChatUsersListView(APIView):
