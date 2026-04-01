@@ -196,9 +196,30 @@ class ChatUserListSerializer(UserFriendStatusSerializer):
     unseen_count = serializers.SerializerMethodField()
     last_message_time_ago = serializers.SerializerMethodField()
     last_message = serializers.SerializerMethodField()
+    profile_image = serializers.SerializerMethodField()
 
     class Meta(UserFriendStatusSerializer.Meta):
-        fields = UserFriendStatusSerializer.Meta.fields + ['unseen_count', 'last_message_time_ago', 'last_message']
+        fields = UserFriendStatusSerializer.Meta.fields + ['unseen_count', 'last_message_time_ago', 'last_message', 'profile_image']
+
+    def get_profile_image(self, obj):
+        request = self.context.get('request')
+        profile_user = obj.user
+        image_url = None
+        
+        acct = getattr(obj, 'account_type', 'normal')
+        if acct == 'normal':
+            pet = PetInfo.objects.filter(owner=profile_user).order_by('-created_at').first()
+            if pet and pet.image:
+                image_url = pet.image.url
+            elif obj.profile_image:
+                image_url = obj.profile_image.url
+        else:
+            if obj.profile_image:
+                image_url = obj.profile_image.url
+        
+        if image_url and request:
+            return request.build_absolute_uri(image_url)
+        return image_url
 
     def get_last_message(self, obj):
         if hasattr(obj, 'last_message_text'):

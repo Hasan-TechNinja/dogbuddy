@@ -8,7 +8,13 @@ from .models import ChatGroup, ChatMessage, FriendRequest, Friendship, GroupMemb
 from .serializers import ChatMessageSerializer, FriendRequestSerializer, FriendshipSerializer, PostSerializer, CommentSerializer, ShareSerializer, UserFriendStatusSerializer, ChatUserListSerializer, ChatGroupListSerializer
 from authentication.serializers import ProfileSerializer, UserSerializer
 from authentication.models import Profile
+from rest_framework.pagination import PageNumberPagination
 from .utils import get_distance_between_points
+
+class StandardResultsSetPagination(PageNumberPagination):
+    page_size = 10
+    page_size_query_param = 'page_size'
+    max_page_size = 100
 
 class UserDistanceView(APIView):
     permission_classes = [permissions.IsAuthenticated]
@@ -459,10 +465,14 @@ class MyGroupsListView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request):
-        memberships = GroupMember.objects.filter(user=request.user).select_related("group")
+        memberships = GroupMember.objects.filter(user=request.user).select_related("group").order_by('-group__created_at')
         groups = [m.group for m in memberships]
-        serializer = ChatGroupListSerializer(groups, many=True, context={"request": request})
-        return Response({"groups": serializer.data}, status=status.HTTP_200_OK)
+        
+        paginator = StandardResultsSetPagination()
+        paginated_groups = paginator.paginate_queryset(groups, request)
+        
+        serializer = ChatGroupListSerializer(paginated_groups, many=True, context={"request": request})
+        return paginator.get_paginated_response(serializer.data)
     
 
 class MyChatUsersListView(APIView):
@@ -471,24 +481,41 @@ class MyChatUsersListView(APIView):
     def get(self, request):
         user = request.user
 
+        # Get latest message time and text for each conversation partner
+        last_msg_subquery = ChatMessage.objects.filter(
+            Q(sender=user, receiver=OuterRef('user_id')) |
+            Q(sender=OuterRef('user_id'), receiver=user)
+        ).order_by('-timestamp')
+
+        last_time = Subquery(last_msg_subquery.values('timestamp')[:1])
+        last_text = Subquery(last_msg_subquery.values('message')[:1])
+
         # Fetch users who have had a chat with the current user
-        chat_partners = User.objects.filter(
+        chat_partners_ids = User.objects.filter(
             Q(sent_messages__receiver=user) | Q(received_messages__sender=user)
-        ).distinct()
+        ).exclude(id=user.id).values_list('id', flat=True).distinct()
 
-        # Filter out self
-        chat_partners = chat_partners.exclude(id=user.id)
+        # Map to profiles and annotate with details
+        profiles = Profile.objects.filter(user_id__in=chat_partners_ids).annotate(
+            last_message_time=last_time,
+            last_message_text=last_text,
+            unseen_cnt=Count(
+                'user__sent_messages', 
+                filter=Q(user__sent_messages__receiver=user, user__sent_messages__is_read=False)
+            )
+        ).order_by('-last_message_time')
 
-        # Map to profiles
-        profiles = Profile.objects.filter(user__in=chat_partners)
+        paginator = StandardResultsSetPagination()
+        paginated_profiles = paginator.paginate_queryset(profiles, request)
+
+        # Add the dynamic attribute for the serializer to avoid O(N) queries
+        for profile in paginated_profiles:
+            setattr(profile, f'unseen_count_{user.id}', profile.unseen_cnt)
 
         serializer = ChatUserListSerializer(
-            profiles,
+            paginated_profiles,
             many=True,
             context={"request": request}
         )
 
-        return Response(
-            {"users": serializer.data},
-            status=status.HTTP_200_OK
-        )
+        return paginator.get_paginated_response(serializer.data)
