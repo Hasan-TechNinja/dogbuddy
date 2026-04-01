@@ -491,13 +491,22 @@ class MyChatUsersListView(APIView):
         last_time = Subquery(last_msg_subquery.values('timestamp')[:1])
         last_text = Subquery(last_msg_subquery.values('message')[:1])
 
+        # Fetch users who are friends
+        friendships = Friendship.objects.filter(Q(user1=user) | Q(user2=user))
+        friend_ids = list(friendships.values_list('user1_id', flat=True)) + list(friendships.values_list('user2_id', flat=True))
+        
         # Fetch users who have had a chat with the current user
-        chat_partners_ids = User.objects.filter(
+        chat_partners_ids = list(User.objects.filter(
             Q(sent_messages__receiver=user) | Q(received_messages__sender=user)
-        ).exclude(id=user.id).values_list('id', flat=True).distinct()
+        ).exclude(id=user.id).values_list('id', flat=True).distinct())
+
+        # Combine IDs and exclude self
+        all_user_ids = list(set(friend_ids + chat_partners_ids))
+        if user.id in all_user_ids:
+            all_user_ids.remove(user.id)
 
         # Map to profiles and annotate with details
-        profiles = Profile.objects.filter(user_id__in=chat_partners_ids).annotate(
+        profiles = Profile.objects.filter(user_id__in=all_user_ids).annotate(
             last_message_time=last_time,
             last_message_text=last_text,
             unseen_cnt=Count(
@@ -534,9 +543,5 @@ class GroupChatMessageView(APIView):
             return Response({"error": "You are not a member of this group"}, status=status.HTTP_403_FORBIDDEN)
             
         messages = group.messages.all().order_by('-timestamp')
-        
-        paginator = StandardResultsSetPagination()
-        paginated_messages = paginator.paginate_queryset(messages, request)
-        
-        serializer = GroupMessageSerializer(paginated_messages, many=True, context={'request': request})
-        return paginator.get_paginated_response(serializer.data)
+        serializer = GroupMessageSerializer(messages, many=True, context={'request': request})
+        return Response(serializer.data, status=status.HTTP_200_OK)
