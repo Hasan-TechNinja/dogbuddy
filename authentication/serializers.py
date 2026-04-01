@@ -1,6 +1,12 @@
 from rest_framework import serializers
 from django.contrib.auth.models import User
-from .models import ProfessionalInformation, Profile
+from .models import ProfessionalInformation, Profile, FCMDevice
+
+class FCMDeviceSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = FCMDevice
+        fields = ['fcm_token', 'device_type', 'created_at']
+        read_only_fields = ['created_at']
 
 class UserSerializer(serializers.ModelSerializer):
     class Meta:

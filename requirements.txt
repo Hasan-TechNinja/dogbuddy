@@ -43,3 +43,4 @@ ujson==5.11.0
 urllib3==2.5.0
 zope.interface==8.1.1
 uvicorn==0.41.0
+firebase-admin==6.6.0

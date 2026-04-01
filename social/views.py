@@ -86,6 +86,8 @@ class NearbyUsersView(APIView):
             "nearby_users": nearby_users
         })
 
+from .fcm_utils import send_fcm_notification
+
 class SendFriendRequestView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
@@ -112,6 +114,15 @@ class SendFriendRequestView(APIView):
              return Response({'error': 'This user has already sent you a friend request. Please accept it.'}, status=status.HTTP_400_BAD_REQUEST)
 
         friend_request = FriendRequest.objects.create(from_user=request.user, to_user=to_user)
+        
+        # Trigger FCM Notification
+        send_fcm_notification(
+            user=to_user,
+            title="New Friend Request",
+            body=f"{request.user.profile.name or request.user.username} sent you a friend request!",
+            data={"type": "friend_request", "from_user_id": str(request.user.id)}
+        )
+        
         serializer = FriendRequestSerializer(friend_request)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
@@ -124,6 +135,14 @@ class AcceptFriendRequestView(APIView):
 
         # Create Friendship
         Friendship.objects.create(user1=friend_request.from_user, user2=friend_request.to_user)
+        
+        # Trigger FCM Notification
+        send_fcm_notification(
+            user=friend_request.from_user,
+            title="Friend Request Accepted",
+            body=f"{request.user.profile.name or request.user.username} accepted your friend request!",
+            data={"type": "friend_request_accepted", "from_user_id": str(request.user.id)}
+        )
         
         # Delete the request
         friend_request.delete()

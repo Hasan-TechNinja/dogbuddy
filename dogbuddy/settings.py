@@ -118,6 +118,8 @@ CHANNEL_LAYERS = {
 # }
 
 
+# Original database configurations-----------------------------------------------------
+
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
@@ -184,6 +186,9 @@ STATICFILES_DIRS = [BASE_DIR / 'static']
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# Firebase Cloud Messaging
+FCM_SERVICE_ACCOUNT_KEY_PATH = BASE_DIR / 'nett4dogs-firebase-adminsdk-fbsvc-58a8df73aa.json'
 
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.ionos.de'

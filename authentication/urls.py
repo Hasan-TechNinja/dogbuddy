@@ -15,5 +15,6 @@ urlpatterns = [
     path('delete/', views.DeleteAccount.as_view(), name = 'delete-user'),
     path('others/profile/<int:id>/', views.ProfileDetailsView.as_view(), name='other-user-profile'),
     path('social-login/', views.SocialLogin.as_view(), name='social_login'),
+    path('register-fcm-token/', views.RegisterFCMTokenView.as_view(), name='register_fcm_token'),
 
 ]
