@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import AllPostsView, ChatMessageView, SendFriendRequestView, AcceptFriendRequestView, RejectFriendRequestView, CancelFriendRequestView, UnfriendView, FriendListView, PendingRequestsView, PostView, PostDetailView, LikePostView, CommentView, SharePostView, GeneralUserListView, ProfileView, CreateGroup, JoinGroup, UserFriendStatusListView
+from .views import AllPostsView, ChatMessageView, SendFriendRequestView, AcceptFriendRequestView, RejectFriendRequestView, CancelFriendRequestView, UnfriendView, FriendListView, PendingRequestsView, PostView, PostDetailView, LikePostView, CommentView, SharePostView, GeneralUserListView, ProfileView, CreateGroup, JoinGroup, UserFriendStatusListView, GroupChatMessageView
 from . import views
 
 urlpatterns = [
@@ -31,4 +31,5 @@ urlpatterns = [
     path('my/chat-users/', views.MyChatUsersListView.as_view(), name='my-chat-users'),
     path('user-distance/<int:user_id>/', views.UserDistanceView.as_view(), name='user-distance'),
     path('nearby-users/', views.NearbyUsersView.as_view(), name='nearby-users'),
+    path('group/<int:group_id>/messages/', GroupChatMessageView.as_view(), name='group-chat-messages'),
 ]

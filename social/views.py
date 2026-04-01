@@ -5,7 +5,7 @@ from django.shortcuts import get_object_or_404
 from django.contrib.auth.models import User
 from django.db.models import Q, Max, OuterRef, Subquery, Count, F
 from .models import ChatGroup, ChatMessage, FriendRequest, Friendship, GroupMember, Post, Comment, Share
-from .serializers import ChatMessageSerializer, FriendRequestSerializer, FriendshipSerializer, PostSerializer, CommentSerializer, ShareSerializer, UserFriendStatusSerializer, ChatUserListSerializer, ChatGroupListSerializer
+from .serializers import ChatMessageSerializer, FriendRequestSerializer, FriendshipSerializer, PostSerializer, CommentSerializer, ShareSerializer, UserFriendStatusSerializer, ChatUserListSerializer, ChatGroupListSerializer, GroupMessageSerializer
 from authentication.serializers import ProfileSerializer, UserSerializer
 from authentication.models import Profile
 from rest_framework.pagination import PageNumberPagination
@@ -519,4 +519,24 @@ class MyChatUsersListView(APIView):
             context={"request": request}
         )
 
+        return paginator.get_paginated_response(serializer.data)
+
+
+class GroupChatMessageView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request, group_id):
+        group = get_object_or_404(ChatGroup, id=group_id)
+        
+        # Check if the user is a member of the group
+        is_member = GroupMember.objects.filter(group=group, user=request.user).exists()
+        if not is_member:
+            return Response({"error": "You are not a member of this group"}, status=status.HTTP_403_FORBIDDEN)
+            
+        messages = group.messages.all().order_by('-timestamp')
+        
+        paginator = StandardResultsSetPagination()
+        paginated_messages = paginator.paginate_queryset(messages, request)
+        
+        serializer = GroupMessageSerializer(paginated_messages, many=True, context={'request': request})
         return paginator.get_paginated_response(serializer.data)
