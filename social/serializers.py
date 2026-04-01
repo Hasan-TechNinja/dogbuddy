@@ -195,14 +195,34 @@ class UserFriendStatusSerializer(ProfileSerializer):
 class ChatUserListSerializer(UserFriendStatusSerializer):
     unseen_count = serializers.SerializerMethodField()
     last_message_time_ago = serializers.SerializerMethodField()
+    last_message = serializers.SerializerMethodField()
 
     class Meta(UserFriendStatusSerializer.Meta):
-        fields = UserFriendStatusSerializer.Meta.fields + ['unseen_count', 'last_message_time_ago']
+        fields = UserFriendStatusSerializer.Meta.fields + ['unseen_count', 'last_message_time_ago', 'last_message']
+
+    def get_last_message(self, obj):
+        if hasattr(obj, 'last_message_text'):
+            return obj.last_message_text
+        
+        request = self.context.get('request')
+        if not request or not request.user.is_authenticated:
+            return None
+            
+        last_msg = ChatMessage.objects.filter(
+            (Q(sender=request.user, receiver=obj.user) | Q(sender=obj.user, receiver=request.user))
+        ).order_by('-timestamp').first()
+        
+        return last_msg.message if last_msg else None
 
     def get_unseen_count(self, obj):
         request = self.context.get('request')
         if not request or not request.user.is_authenticated:
             return 0
+            
+        attr_name = f'unseen_count_{request.user.id}'
+        if hasattr(obj, attr_name):
+            return getattr(obj, attr_name)
+            
         return ChatMessage.objects.filter(
             sender=obj.user,
             receiver=request.user,
@@ -210,6 +230,9 @@ class ChatUserListSerializer(UserFriendStatusSerializer):
         ).count()
 
     def get_last_message_time_ago(self, obj):
+        if hasattr(obj, 'last_message_time') and obj.last_message_time:
+            return self._format_time_ago(obj.last_message_time)
+
         request = self.context.get('request')
         if not request or not request.user.is_authenticated:
             return None
