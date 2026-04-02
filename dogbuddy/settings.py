@@ -13,6 +13,9 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 from pathlib import Path
 from datetime import timedelta
 from decouple import config
+import os
+from dotenv import load_dotenv
+load_dotenv()
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -22,7 +25,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/4.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-m=(j#e%cygh^bomi#*o312l#m%#f=bqnuyrr+oz5fhhy5r@q@q'
+SECRET_KEY = os.getenv('SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
 #DEBUG = True
@@ -37,7 +40,6 @@ ALLOWED_HOSTS = ["127.0.0.1", "localhost", "developer.nett4dogs.com", "*"]
 
 INSTALLED_APPS = [
     'channels',
-    'daphne',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -88,8 +90,7 @@ CHANNEL_LAYERS = {
     "default": {
         "BACKEND": "channels_redis.core.RedisChannelLayer",
         "CONFIG": {
-            "hosts": [("127.0.0.1", 6379)],
-            # "hosts": [("redis", 6379)],
+            "hosts": [("redis", 6379, 1)],
         },
     },
 }
@@ -125,8 +126,8 @@ DATABASES = {
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': 'dogbuddydatabase',
         'USER': 'dgbuser',
-        'PASSWORD': '45rtfgdfe4erSawd12@!',
-        'HOST': 'localhost',
+        'PASSWORD': os.getenv('POSTGRE_PASSWORD'),
+        'HOST': 'db',
         'PORT': '5432',
     }
 }

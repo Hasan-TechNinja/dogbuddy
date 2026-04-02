@@ -1,0 +1,103 @@
+version: "3.8"
+services:
+  redis:
+    image: redis:7.2-alpine   # lightweight Redis image
+    container_name: redis-dogbuddy
+    restart: unless-stopped
+    ports:
+      - "6378:6379"           # expose Redis to host
+    volumes:
+      - redis_data:/data
+    networks:
+      - dogbuddy-network
+  db:
+    image: postgres:18-alpine
+    container_name: postgres
+    restart: always
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_PASSWORD=${POSTGRE_PASSWORD}
+      - PGDATA=/var/lib/postgresql/data
+    env_file:
+      - .env
+    networks:
+      - dogbuddy-network
+
+  django:
+    image: dog_buddy:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: django-dogbuddy
+    depends_on:
+      - db
+    restart: always
+    volumes:
+      - static_volume:/app/staticfiles
+      - ./logs:/app/logs
+
+    environment:
+      - DEBUG=False
+      - DJANGO_SETTINGS_MODULE=dogbuddy.settings
+      - POSTGRES_HOST=db
+    env_file:
+      - .env
+    expose:
+      - "8000"
+#    healthcheck:
+#      test: ["CMD", "curl", "-f", "http://localhost:8000/admin/login/?next=/admin/"]
+#      interval: 30s
+#      timeout: 10s
+#      retries: 3
+#      start_period: 40s
+    networks:
+      - dogbuddy-network
+
+  nginx:
+    image: nginx:alpine
+    container_name: nginx
+    depends_on:
+      - django
+      - db
+
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - static_volume:/static:ro
+      # media folder no longer needed locally → served from CloudFront
+      - ./nginx/certbot/conf:/etc/letsencrypt:ro
+      # Let’s Encrypt certs1
+      - ./nginx/certbot/www:/var/www/certbot:ro
+      - ./nginx/logs:/var/log/nginx
+    restart: always
+    networks:
+      - dogbuddy-network
+
+#  certbot-dogbuddy:
+#    image: certbot/certbot
+#    container_name: certbot-prod-dogbuddy
+#    volumes:
+#      - ./nginx/certbot/conf:/etc/letsencrypt
+#      - ./nginx/renew-hook.sh:/renew-hook.sh:ro        # ← add this
+#    entrypoint: >
+#      /bin/sh -c 'trap exit TERM; while :; do
+#      certbot renew --quiet --renew-hook "/renew-hook.sh";
+#      sleep 12h & wait $${!};
+#      done;'
+#    restart: unless-stopped
+#    networks:
+#      - dogbuddy-network
+
+# Only keep volumes you still need locally
+volumes:
+  static_volume:
+  postgres_data:
+  redis_data:
+
+
+networks:
+  dogbuddy-network:
+    driver: bridge
