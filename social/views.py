@@ -207,15 +207,20 @@ class FriendListView(APIView):
 
     def get(self, request):
         friendships = Friendship.objects.filter(Q(user1=request.user) | Q(user2=request.user))
-        friends = []
+        friend_ids = []
         for friendship in friendships:
             if friendship.user1 == request.user:
-                friends.append(friendship.user2)
+                friend_ids.append(friendship.user2_id)
             else:
-                friends.append(friendship.user1)
+                friend_ids.append(friendship.user1_id)
         
-        serializer = UserSerializer(friends, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        profiles = Profile.objects.filter(user_id__in=friend_ids)
+        serializer = UserFriendStatusSerializer(profiles, many=True, context={'request': request})
+        data = {
+            "profiles": serializer.data,
+            "count": profiles.count()
+        }
+        return Response(data, status=status.HTTP_200_OK)
     
     
 class GeneralUserListView(APIView):

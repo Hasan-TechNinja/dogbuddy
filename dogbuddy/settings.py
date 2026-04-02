@@ -29,7 +29,7 @@ SECRET_KEY = 'django-insecure-m=(j#e%cygh^bomi#*o312l#m%#f=bqnuyrr+oz5fhhy5r@q@q
 
 #ALLOWED_HOSTS = ["127.0.0.1", "localhost", "*"]
 
-DEBUG = False
+DEBUG = config('DEBUG', default=False, cast=bool)
 ALLOWED_HOSTS = ["127.0.0.1", "localhost", "developer.nett4dogs.com", "*"]
 
 
