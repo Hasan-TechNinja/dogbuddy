@@ -216,11 +216,7 @@ class FriendListView(APIView):
         
         profiles = Profile.objects.filter(user_id__in=friend_ids)
         serializer = UserFriendStatusSerializer(profiles, many=True, context={'request': request})
-        data = {
-            "profiles": serializer.data,
-            "count": profiles.count()
-        }
-        return Response(data, status=status.HTTP_200_OK)
+        return Response(serializer.data, status=status.HTTP_200_OK)
     
     
 class GeneralUserListView(APIView):
