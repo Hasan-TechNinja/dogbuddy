@@ -138,8 +138,13 @@ class ChatMessageSerializer(serializers.ModelSerializer):
             if profile.profile_image:
                 image_url = profile.profile_image.url
         
-        if image_url and request:
-            return request.build_absolute_uri(image_url)
+        if image_url:
+            if request:
+                return request.build_absolute_uri(image_url)
+            # websocket absolute url fallback
+            base_url = self.context.get('base_url')
+            if base_url:
+                return f"{base_url}{image_url}" if not image_url.startswith('http') else image_url
         return image_url
 
 
@@ -170,8 +175,13 @@ class GroupMessageSerializer(serializers.ModelSerializer):
             if profile.profile_image:
                 image_url = profile.profile_image.url
         
-        if image_url and request:
-            return request.build_absolute_uri(image_url)
+        if image_url:
+            if request:
+                return request.build_absolute_uri(image_url)
+            # websocket absolute url fallback
+            base_url = self.context.get('base_url')
+            if base_url:
+                return f"{base_url}{image_url}" if not image_url.startswith('http') else image_url
         return image_url
 
 
