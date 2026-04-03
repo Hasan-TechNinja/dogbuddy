@@ -280,6 +280,8 @@ class FriendListView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request):
+        search_query = request.query_params.get('search', '')
+        
         friendships = Friendship.objects.filter(Q(user1=request.user) | Q(user2=request.user))
         friend_ids = []
         for friendship in friendships:
@@ -289,6 +291,13 @@ class FriendListView(APIView):
                 friend_ids.append(friendship.user1_id)
         
         profiles = Profile.objects.filter(user_id__in=friend_ids)
+        
+        if search_query:
+            profiles = profiles.filter(
+                Q(name__icontains=search_query) | 
+                Q(user__username__icontains=search_query)
+            )
+            
         serializer = UserFriendStatusSerializer(profiles, many=True, context={'request': request})
         return Response(serializer.data, status=status.HTTP_200_OK)
     
