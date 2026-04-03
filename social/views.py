@@ -474,7 +474,7 @@ class ChatMessageView(APIView):
             (Q(sender=request.user) & Q(receiver=chat_partner)) |
             (Q(sender=chat_partner) & Q(receiver=request.user))
         ).order_by("timestamp")
-        serializer = ChatMessageSerializer(messages, many=True)
+        serializer = ChatMessageSerializer(messages, many=True, context={'request': request})
         return Response(serializer.data, status=status.HTTP_200_OK)
     
 
