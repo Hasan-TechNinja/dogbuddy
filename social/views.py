@@ -11,6 +11,7 @@ from authentication.models import Profile
 from rest_framework.pagination import PageNumberPagination
 from .utils import get_distance_between_points
 from pet.models import PetInfo
+from .fcm_utils import send_fcm_notification
 
 class StandardResultsSetPagination(PageNumberPagination):
     page_size = 10
@@ -127,7 +128,45 @@ class NearbyUsersView(APIView):
             "nearby_users": nearby_users
         })
 
-from .fcm_utils import send_fcm_notification
+class InviteNearbyUserView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        to_user_ids = request.data.get('to_user_ids')
+        
+        if not to_user_ids or not isinstance(to_user_ids, list):
+            return Response({'error': 'to_user_ids must be a list of user IDs'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Content remains fixed for "Come to play" as requested
+        title = "Play Invite"
+        body = f"{request.user.profile.name or request.user.username} would like to play with you and your dog!"
+        
+        sent_to = []
+        for user_id in to_user_ids:
+            try:
+                to_user = User.objects.get(id=user_id)
+                if request.user == to_user:
+                    continue # Cannot invite self
+                
+                send_fcm_notification(
+                    user=to_user,
+                    title=title,
+                    body=body,
+                    data={
+                        "type": "proximity_invite", 
+                        "from_user_id": str(request.user.id),
+                        "invite_type": "play"
+                    }
+                )
+                sent_to.append(user_id)
+            except User.DoesNotExist:
+                continue
+
+        return Response({
+            'message': f'Invitation sent to {len(sent_to)} user(s)',
+            'sent_to_ids': sent_to
+        }, status=status.HTTP_200_OK)
+
 
 class SendFriendRequestView(APIView):
     permission_classes = [permissions.IsAuthenticated]

@@ -31,5 +31,6 @@ urlpatterns = [
     path('my/chat-users/', views.MyChatUsersListView.as_view(), name='my-chat-users'),
     path('user-distance/<int:user_id>/', views.UserDistanceView.as_view(), name='user-distance'),
     path('nearby-users/', views.NearbyUsersView.as_view(), name='nearby-users'),
+    path('invite-nearby/', views.InviteNearbyUserView.as_view(), name='invite-nearby'),
     path('group/<int:group_id>/messages/', GroupChatMessageView.as_view(), name='group-chat-messages'),
 ]
