@@ -121,23 +121,23 @@ CHANNEL_LAYERS = {
 
 # Original database configurations-----------------------------------------------------
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'dogbuddydatabase',
-        'USER': 'dgbuser',
-        'PASSWORD': os.getenv('POSTGRE_PASSWORD'),
-        'HOST': 'db',
-        'PORT': '5432',
-    }
-}
-
 # DATABASES = {
 #     'default': {
-#         'ENGINE': 'django.db.backends.sqlite3',
-#         'NAME': BASE_DIR / 'db.sqlite3',
+#         'ENGINE': 'django.db.backends.postgresql',
+#         'NAME': 'dogbuddydatabase',
+#         'USER': 'dgbuser',
+#         'PASSWORD': os.getenv('POSTGRE_PASSWORD'),
+#         'HOST': 'db',
+#         'PORT': '5432',
 #     }
 # }
+
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / 'db.sqlite3',
+    }
+}
 
 
 # Password validation

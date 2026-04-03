@@ -10,6 +10,7 @@ from authentication.serializers import ProfileSerializer, UserSerializer
 from authentication.models import Profile
 from rest_framework.pagination import PageNumberPagination
 from .utils import get_distance_between_points
+from pet.models import PetInfo
 
 class StandardResultsSetPagination(PageNumberPagination):
     page_size = 10
@@ -54,6 +55,10 @@ class NearbyUsersView(APIView):
         except ValueError:
             return Response({"error": "Invalid radius"}, status=400)
 
+        # Filtering parameters
+        filter_query = request.query_params.get('filter', '')
+        filter_list = [f.strip().lower() for f in filter_query.split(',')] if filter_query else []
+
         my_profile = getattr(request.user, 'profile', None)
         if not my_profile or my_profile.latitude is None or my_profile.longitude is None:
             return Response({"error": "Current user location not set"}, status=400)
@@ -61,10 +66,16 @@ class NearbyUsersView(APIView):
         my_lat = float(my_profile.latitude)
         my_lon = float(my_profile.longitude)
 
+        # Identify buddy IDs for the current user
+        friendships = Friendship.objects.filter(Q(user1=request.user) | Q(user2=request.user))
+        buddy_ids = set()
+        for f in friendships:
+            buddy_ids.add(f.user1_id if f.user2_id == request.user.id else f.user2_id)
+
         # Basic filtering: Get profiles with location set
         other_profiles = Profile.objects.exclude(user=request.user).exclude(
             latitude__isnull=True, longitude__isnull=True
-        )
+        ).select_related('user')
 
         nearby_users = []
         for profile in other_profiles:
@@ -72,15 +83,39 @@ class NearbyUsersView(APIView):
                 my_lat, my_lon, 
                 float(profile.latitude), float(profile.longitude)
             )
+            
             if dist is not None and dist <= radius_km:
+                user_id = profile.user.id
+                is_buddy = user_id in buddy_ids
+                
+                # Fetch pet statuses for this user
+                pet_statuses = list(PetInfo.objects.filter(owner_id=user_id).values_list('status', flat=True))
+                
+                # Apply categorization filters
+                if filter_list:
+                    keep = False
+                    if 'buddies' in filter_list and is_buddy:
+                        keep = True
+                    if ('general' in filter_list or 'general_user' in filter_list or 'general user' in filter_list) and not is_buddy:
+                        keep = True
+                    if 'playing' in filter_list and 'playing' in pet_statuses:
+                        keep = True
+                    if ('walk' in filter_list or 'walking' in filter_list) and 'walking' in pet_statuses:
+                        keep = True
+                    
+                    if not keep:
+                        continue
+
                 nearby_users.append({
-                    "id": profile.user.id,
+                    "id": user_id,
                     "username": profile.user.username,
                     "name": profile.name,
                     "image": request.build_absolute_uri(profile.profile_image.url) if profile.profile_image else None,
                     "distance_km": dist,
                     "latitude": float(profile.latitude),
-                    "longitude": float(profile.longitude)
+                    "longitude": float(profile.longitude),
+                    "is_buddy": is_buddy,
+                    "pet_statuses": pet_statuses
                 })
 
         # Sort by distance
