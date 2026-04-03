@@ -89,8 +89,19 @@ class NearbyUsersView(APIView):
                 user_id = profile.user.id
                 is_buddy = user_id in buddy_ids
                 
-                # Fetch pet statuses for this user
-                pet_statuses = list(PetInfo.objects.filter(owner_id=user_id).values_list('status', flat=True))
+                # Fetch detailed pet info for this user
+                user_pets = PetInfo.objects.filter(owner_id=user_id)
+                pet_details = []
+                pet_statuses = []
+                for p in user_pets:
+                    pet_statuses.append(p.status)
+                    pet_details.append({
+                        "name": p.name,
+                        "status": p.status,
+                        "gender": p.gender,
+                        "size": p.size,
+                        "life_stage": p.life_stage # Property from PetInfo model
+                    })
                 
                 # Apply categorization filters
                 if filter_list:
@@ -116,7 +127,7 @@ class NearbyUsersView(APIView):
                     "latitude": float(profile.latitude),
                     "longitude": float(profile.longitude),
                     "is_buddy": is_buddy,
-                    "pet_statuses": pet_statuses
+                    "pets": pet_details
                 })
 
         # Sort by distance
