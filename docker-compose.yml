@@ -12,7 +12,7 @@ services:
       - dogbuddy-network
   db:
     image: postgres:18-alpine
-    container_name: postgres
+  
     restart: always
     volumes:
       - postgres_data:/var/lib/postgresql/data
@@ -76,20 +76,20 @@ services:
     networks:
       - dogbuddy-network
 
-#  certbot-dogbuddy:
-#    image: certbot/certbot
-#    container_name: certbot-prod-dogbuddy
-#    volumes:
-#      - ./nginx/certbot/conf:/etc/letsencrypt
-#      - ./nginx/renew-hook.sh:/renew-hook.sh:ro        # ← add this
-#    entrypoint: >
-#      /bin/sh -c 'trap exit TERM; while :; do
-#      certbot renew --quiet --renew-hook "/renew-hook.sh";
-#      sleep 12h & wait $${!};
-#      done;'
-#    restart: unless-stopped
-#    networks:
-#      - dogbuddy-network
+  certbot-dogbuddy:
+    image: certbot/certbot
+    container_name: certbot-prod-dogbuddy
+    volumes:
+      - ./nginx/certbot/conf:/etc/letsencrypt
+      - ./nginx/renew-hook.sh:/renew-hook.sh:ro        # ← add this
+    entrypoint: >
+      /bin/sh -c 'trap exit TERM; while :; do
+      certbot renew --quiet --renew-hook "/renew-hook.sh";
+      sleep 12h & wait $${!};
+      done;'
+    restart: unless-stopped
+    networks:
+      - dogbuddy-network
 
 # Only keep volumes you still need locally
 volumes:
