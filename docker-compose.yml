@@ -36,6 +36,7 @@ services:
     volumes:
       - static_volume:/app/staticfiles
       - ./logs:/app/logs
+      - media_volume:/app/media
 
     environment:
       - DEBUG=False
@@ -67,7 +68,7 @@ services:
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
       - static_volume:/static:ro
-      # media folder no longer needed locally → served from CloudFront
+      - media_volume:/media:ro
       - ./nginx/certbot/conf:/etc/letsencrypt:ro
       # Let’s Encrypt certs1
       - ./nginx/certbot/www:/var/www/certbot:ro
@@ -96,6 +97,7 @@ volumes:
   static_volume:
   postgres_data:
   redis_data:
+  media_volume:
 
 
 networks:

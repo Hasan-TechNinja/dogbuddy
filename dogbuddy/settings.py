@@ -32,7 +32,7 @@ SECRET_KEY = os.getenv('SECRET_KEY')
 
 #ALLOWED_HOSTS = ["127.0.0.1", "localhost", "*"]
 
-DEBUG = config('DEBUG', default=False, cast=bool)
+DEBUG = True
 ALLOWED_HOSTS = ["127.0.0.1", "localhost", "developer.nett4dogs.com", "*"]
 
 
@@ -91,7 +91,7 @@ CHANNEL_LAYERS = {
     "default": {
         "BACKEND": "channels_redis.core.RedisChannelLayer",
         "CONFIG": {
-            "hosts": [("127.0.0.1", 6379)],
+            "hosts": [("redis", 6379)],
         },
     },
 }
