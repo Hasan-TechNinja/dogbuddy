@@ -10,6 +10,8 @@ from authentication.serializers import ProfileSerializer, UserSerializer
 from authentication.models import Profile
 from rest_framework.pagination import PageNumberPagination
 from .utils import get_distance_between_points
+from pet.models import PetInfo
+from .fcm_utils import send_fcm_notification
 
 class StandardResultsSetPagination(PageNumberPagination):
     page_size = 10
@@ -54,6 +56,10 @@ class NearbyUsersView(APIView):
         except ValueError:
             return Response({"error": "Invalid radius"}, status=400)
 
+        # Filtering parameters
+        filter_query = request.query_params.get('filter', '')
+        filter_list = [f.strip().lower() for f in filter_query.split(',')] if filter_query else []
+
         my_profile = getattr(request.user, 'profile', None)
         if not my_profile or my_profile.latitude is None or my_profile.longitude is None:
             return Response({"error": "Current user location not set"}, status=400)
@@ -61,10 +67,16 @@ class NearbyUsersView(APIView):
         my_lat = float(my_profile.latitude)
         my_lon = float(my_profile.longitude)
 
+        # Identify buddy IDs for the current user
+        friendships = Friendship.objects.filter(Q(user1=request.user) | Q(user2=request.user))
+        buddy_ids = set()
+        for f in friendships:
+            buddy_ids.add(f.user1_id if f.user2_id == request.user.id else f.user2_id)
+
         # Basic filtering: Get profiles with location set
         other_profiles = Profile.objects.exclude(user=request.user).exclude(
             latitude__isnull=True, longitude__isnull=True
-        )
+        ).select_related('user')
 
         nearby_users = []
         for profile in other_profiles:
@@ -72,15 +84,50 @@ class NearbyUsersView(APIView):
                 my_lat, my_lon, 
                 float(profile.latitude), float(profile.longitude)
             )
+            
             if dist is not None and dist <= radius_km:
+                user_id = profile.user.id
+                is_buddy = user_id in buddy_ids
+                
+                # Fetch detailed pet info for this user
+                user_pets = PetInfo.objects.filter(owner_id=user_id)
+                pet_details = []
+                pet_statuses = []
+                for p in user_pets:
+                    pet_statuses.append(p.status)
+                    pet_details.append({
+                        "name": p.name,
+                        "status": p.status,
+                        "gender": p.gender,
+                        "size": p.size,
+                        "life_stage": p.life_stage # Property from PetInfo model
+                    })
+                
+                # Apply categorization filters
+                if filter_list:
+                    keep = False
+                    if 'buddies' in filter_list and is_buddy:
+                        keep = True
+                    if ('general' in filter_list or 'general_user' in filter_list or 'general user' in filter_list) and not is_buddy:
+                        keep = True
+                    if 'playing' in filter_list and 'playing' in pet_statuses:
+                        keep = True
+                    if ('walk' in filter_list or 'walking' in filter_list) and 'walking' in pet_statuses:
+                        keep = True
+                    
+                    if not keep:
+                        continue
+
                 nearby_users.append({
-                    "id": profile.user.id,
+                    "id": user_id,
                     "username": profile.user.username,
                     "name": profile.name,
                     "image": request.build_absolute_uri(profile.profile_image.url) if profile.profile_image else None,
                     "distance_km": dist,
                     "latitude": float(profile.latitude),
-                    "longitude": float(profile.longitude)
+                    "longitude": float(profile.longitude),
+                    "is_buddy": is_buddy,
+                    "pets": pet_details
                 })
 
         # Sort by distance
@@ -92,7 +139,45 @@ class NearbyUsersView(APIView):
             "nearby_users": nearby_users
         })
 
-from .fcm_utils import send_fcm_notification
+class InviteNearbyUserView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        to_user_ids = request.data.get('to_user_ids')
+        
+        if not to_user_ids or not isinstance(to_user_ids, list):
+            return Response({'error': 'to_user_ids must be a list of user IDs'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Content remains fixed for "Come to play" as requested
+        title = "Play Invite"
+        body = f"{request.user.profile.name or request.user.username} would like to play with you and your dog!"
+        
+        sent_to = []
+        for user_id in to_user_ids:
+            try:
+                to_user = User.objects.get(id=user_id)
+                if request.user == to_user:
+                    continue # Cannot invite self
+                
+                send_fcm_notification(
+                    user=to_user,
+                    title=title,
+                    body=body,
+                    data={
+                        "type": "proximity_invite", 
+                        "from_user_id": str(request.user.id),
+                        "invite_type": "play"
+                    }
+                )
+                sent_to.append(user_id)
+            except User.DoesNotExist:
+                continue
+
+        return Response({
+            'message': f'Invitation sent to {len(sent_to)} user(s)',
+            'sent_to_ids': sent_to
+        }, status=status.HTTP_200_OK)
+
 
 class SendFriendRequestView(APIView):
     permission_classes = [permissions.IsAuthenticated]
@@ -206,6 +291,8 @@ class FriendListView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request):
+        search_query = request.query_params.get('search', '')
+        
         friendships = Friendship.objects.filter(Q(user1=request.user) | Q(user2=request.user))
         friend_ids = []
         for friendship in friendships:
@@ -215,6 +302,13 @@ class FriendListView(APIView):
                 friend_ids.append(friendship.user1_id)
         
         profiles = Profile.objects.filter(user_id__in=friend_ids)
+        
+        if search_query:
+            profiles = profiles.filter(
+                Q(name__icontains=search_query) | 
+                Q(user__username__icontains=search_query)
+            )
+            
         serializer = UserFriendStatusSerializer(profiles, many=True, context={'request': request})
         return Response(serializer.data, status=status.HTTP_200_OK)
     
@@ -380,7 +474,7 @@ class ChatMessageView(APIView):
             (Q(sender=request.user) & Q(receiver=chat_partner)) |
             (Q(sender=chat_partner) & Q(receiver=request.user))
         ).order_by("timestamp")
-        serializer = ChatMessageSerializer(messages, many=True)
+        serializer = ChatMessageSerializer(messages, many=True, context={'request': request})
         return Response(serializer.data, status=status.HTTP_200_OK)
     
 

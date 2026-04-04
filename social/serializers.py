@@ -112,9 +112,40 @@ class ShareSerializer(serializers.ModelSerializer):
         read_only_fields = ["post", "user"]
 
 class ChatMessageSerializer(serializers.ModelSerializer):
+    sender_name = serializers.CharField(source="sender.profile.name", read_only=True)
+    sender_image = serializers.SerializerMethodField()
+
     class Meta:
         model = ChatMessage
-        fields = ["id", "sender", "receiver", "message", "timestamp"]
+        fields = ["id", "sender", "sender_name", "sender_image", "receiver", "message", "timestamp"]
+
+    def get_sender_image(self, obj):
+        request = self.context.get('request')
+        sender = obj.sender
+        profile = getattr(sender, 'profile', None)
+        if not profile:
+            return None
+        
+        image_url = None
+        acct = getattr(profile, 'account_type', 'normal')
+        if acct == 'normal':
+            pet = PetInfo.objects.filter(owner=sender).order_by('-created_at').first()
+            if pet and pet.image:
+                image_url = pet.image.url
+            elif profile.profile_image:
+                image_url = profile.profile_image.url
+        else:
+            if profile.profile_image:
+                image_url = profile.profile_image.url
+        
+        if image_url:
+            if request:
+                return request.build_absolute_uri(image_url)
+            # websocket absolute url fallback
+            base_url = self.context.get('base_url')
+            if base_url:
+                return f"{base_url}{image_url}" if not image_url.startswith('http') else image_url
+        return image_url
 
 
 class GroupMessageSerializer(serializers.ModelSerializer):
@@ -144,8 +175,13 @@ class GroupMessageSerializer(serializers.ModelSerializer):
             if profile.profile_image:
                 image_url = profile.profile_image.url
         
-        if image_url and request:
-            return request.build_absolute_uri(image_url)
+        if image_url:
+            if request:
+                return request.build_absolute_uri(image_url)
+            # websocket absolute url fallback
+            base_url = self.context.get('base_url')
+            if base_url:
+                return f"{base_url}{image_url}" if not image_url.startswith('http') else image_url
         return image_url
 
 

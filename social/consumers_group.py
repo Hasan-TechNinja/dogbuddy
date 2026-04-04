@@ -105,4 +105,8 @@ class GroupChatConsumer(AsyncWebsocketConsumer):
 
     @database_sync_to_async
     def _serialize(self, msg):
-        return GroupMessageSerializer(msg).data
+        # Extract host from headers to build absolute URLs
+        headers = dict(self.scope.get('headers', []))
+        host = headers.get(b'host', b'').decode()
+        base_url = f"http://{host}" if host else ""
+        return GroupMessageSerializer(msg, context={'base_url': base_url}).data

@@ -39,6 +39,7 @@ ALLOWED_HOSTS = ["127.0.0.1", "localhost", "developer.nett4dogs.com", "*"]
 # Application definition
 
 INSTALLED_APPS = [
+    'daphne',
     'channels',
     'django.contrib.admin',
     'django.contrib.auth',
@@ -90,7 +91,7 @@ CHANNEL_LAYERS = {
     "default": {
         "BACKEND": "channels_redis.core.RedisChannelLayer",
         "CONFIG": {
-            "hosts": [("redis", 6379, 1)],
+            "hosts": [("127.0.0.1", 6379)],
         },
     },
 }
@@ -121,23 +122,23 @@ CHANNEL_LAYERS = {
 
 # Original database configurations-----------------------------------------------------
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'dogbuddydatabase',
-        'USER': 'dgbuser',
-        'PASSWORD': os.getenv('POSTGRE_PASSWORD'),
-        'HOST': 'db',
-        'PORT': '5432',
-    }
-}
-
 # DATABASES = {
 #     'default': {
-#         'ENGINE': 'django.db.backends.sqlite3',
-#         'NAME': BASE_DIR / 'db.sqlite3',
+#         'ENGINE': 'django.db.backends.postgresql',
+#         'NAME': 'dogbuddydatabase',
+#         'USER': 'dgbuser',
+#         'PASSWORD': os.getenv('POSTGRE_PASSWORD'),
+#         'HOST': 'db',
+#         'PORT': '5432',
 #     }
 # }
+
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / 'db.sqlite3',
+    }
+}
 
 
 # Password validation
@@ -179,8 +180,8 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 MEDIA_URL = '/media/'
-MEDIA_ROOT = '/var/www/dogbuddy/media'
-# MEDIA_ROOT = BASE_DIR / 'media'
+# MEDIA_ROOT = '/var/www/dogbuddy/media'
+MEDIA_ROOT = BASE_DIR / 'media'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 STATICFILES_DIRS = [BASE_DIR / 'static']
 

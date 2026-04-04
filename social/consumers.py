@@ -137,7 +137,11 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
     @database_sync_to_async
     def _serialize(self, chat_message):
-        return ChatMessageSerializer(chat_message).data
+        # Extract host from headers to build absolute URLs
+        headers = dict(self.scope.get('headers', []))
+        host = headers.get(b'host', b'').decode()
+        base_url = f"http://{host}" if host else ""
+        return ChatMessageSerializer(chat_message, context={'base_url': base_url}).data
 
     @database_sync_to_async
     def _get_last_messages(self, user_a_id, user_b_id, limit=20):
