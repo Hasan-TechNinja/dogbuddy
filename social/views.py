@@ -637,6 +637,6 @@ class GroupChatMessageView(APIView):
         if not is_member:
             return Response({"error": "You are not a member of this group"}, status=status.HTTP_403_FORBIDDEN)
             
-        messages = group.messages.all().order_by('-timestamp')
+        messages = group.messages.all().order_by('timestamp')
         serializer = GroupMessageSerializer(messages, many=True, context={'request': request})
         return Response(serializer.data, status=status.HTTP_200_OK)
