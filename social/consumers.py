@@ -9,6 +9,8 @@ from django.contrib.auth import get_user_model
 
 from .models import ChatMessage
 from .serializers import ChatMessageSerializer
+from notification.utils import send_push_notification
+from asgiref.sync import sync_to_async
 
 User = get_user_model()
 logger = logging.getLogger("django")
@@ -109,6 +111,10 @@ class ChatConsumer(AsyncWebsocketConsumer):
                     "message": serialized
                 }
             )
+            
+            # Send Push Notification
+            await self._send_push_notification(self.user.id, self.other_user_id, message)
+            
         except Exception as exc:
             logger.exception(f"receive error: {exc}")
             await self.send(text_data=json.dumps({"error": "Invalid message format"}))
@@ -134,6 +140,26 @@ class ChatConsumer(AsyncWebsocketConsumer):
             receiver_id=receiver_id,
             message=message
         )
+
+    @sync_to_async
+    def _send_push_notification(self, sender_id, receiver_id, message_text):
+        try:
+            receiver = User.objects.get(id=receiver_id)
+            sender = User.objects.get(id=sender_id)
+            sender_profile = getattr(sender, 'profile', None)
+            sender_name = sender_profile.name if sender_profile and sender_profile.name else sender.username
+            
+            send_push_notification(
+                user=receiver,
+                title=f"New message from {sender_name}",
+                body=message_text,
+                data={
+                    "type": "message", 
+                    "from_user_id": str(sender_id)
+                }
+            )
+        except Exception as e:
+            logger.error(f"Push notification error: {e}")
 
     @database_sync_to_async
     def _serialize(self, chat_message):

@@ -50,6 +50,7 @@ INSTALLED_APPS = [
     'authentication',
     'pet',
     'social',
+    'notification',
 
     'rest_framework',
     'rest_framework_simplejwt',

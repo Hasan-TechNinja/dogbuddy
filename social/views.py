@@ -11,7 +11,7 @@ from authentication.models import Profile
 from rest_framework.pagination import PageNumberPagination
 from .utils import get_distance_between_points
 from pet.models import PetInfo
-from .fcm_utils import send_fcm_notification
+from notification.utils import send_push_notification
 
 class StandardResultsSetPagination(PageNumberPagination):
     page_size = 10
@@ -159,7 +159,7 @@ class InviteNearbyUserView(APIView):
                 if request.user == to_user:
                     continue # Cannot invite self
                 
-                send_fcm_notification(
+                send_push_notification(
                     user=to_user,
                     title=title,
                     body=body,
@@ -207,7 +207,7 @@ class SendFriendRequestView(APIView):
         friend_request = FriendRequest.objects.create(from_user=request.user, to_user=to_user)
         
         # Trigger FCM Notification
-        send_fcm_notification(
+        send_push_notification(
             user=to_user,
             title="New Friend Request",
             body=f"{request.user.profile.name or request.user.username} sent you a friend request!",
@@ -228,7 +228,7 @@ class AcceptFriendRequestView(APIView):
         Friendship.objects.create(user1=friend_request.from_user, user2=friend_request.to_user)
         
         # Trigger FCM Notification
-        send_fcm_notification(
+        send_push_notification(
             user=friend_request.from_user,
             title="Friend Request Accepted",
             body=f"{request.user.profile.name or request.user.username} accepted your friend request!",
@@ -426,6 +426,13 @@ class LikePostView(APIView):
             return Response({"message": "Unliked"}, status=status.HTTP_200_OK)
         else:
             post.likes.add(request.user)
+            if post.user != request.user:
+                send_push_notification(
+                    user=post.user,
+                    title="New Like",
+                    body=f"{request.user.profile.name or request.user.username} liked your post.",
+                    data={"type": "like", "post_id": str(post.id)}
+                )
             return Response({"message": "Liked"}, status=status.HTTP_200_OK)
 
 
@@ -444,6 +451,13 @@ class CommentView(APIView):
         serializer = CommentSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save(user=request.user, post=post)
+            if post.user != request.user:
+                send_push_notification(
+                    user=post.user,
+                    title="New Comment",
+                    body=f"{request.user.profile.name or request.user.username} commented on your post.",
+                    data={"type": "comment", "post_id": str(post.id)}
+                )
             return Response(serializer.data, status=status.HTTP_201_CREATED)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -461,6 +475,13 @@ class SharePostView(APIView):
             return Response({"message": "Already shared"}, status=status.HTTP_200_OK)
 
         share = Share.objects.create(user=request.user, post=post)
+        if post.user != request.user:
+            send_push_notification(
+                user=post.user,
+                title="Post Shared",
+                body=f"{request.user.profile.name or request.user.username} shared your post.",
+                data={"type": "share", "post_id": str(post.id)}
+            )
         serializer = ShareSerializer(share)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 

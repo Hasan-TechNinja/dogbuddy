@@ -5,6 +5,8 @@ from channels.db import database_sync_to_async
 from django.contrib.auth import get_user_model
 from .models import ChatGroup, GroupMember, GroupMessage
 from .serializers import GroupMessageSerializer
+from notification.utils import send_push_notification
+from asgiref.sync import sync_to_async
 
 User = get_user_model()
 logger = logging.getLogger("django")
@@ -69,6 +71,9 @@ class GroupChatConsumer(AsyncWebsocketConsumer):
                 {"type": "group_message", "message": serialized}
             )
 
+            # Send Notification to all other group members
+            await self._send_group_push_notification(self.user.id, self.group_id, message)
+
         except Exception as e:
             logger.exception("group receive error")
 
@@ -102,6 +107,29 @@ class GroupChatConsumer(AsyncWebsocketConsumer):
             group_id=group_id,
             message=message
         )
+
+    @sync_to_async
+    def _send_group_push_notification(self, sender_id, group_id, message_text):
+        try:
+            sender = User.objects.get(id=sender_id)
+            group = ChatGroup.objects.get(id=group_id)
+            sender_profile = getattr(sender, 'profile', None)
+            sender_name = sender_profile.name if sender_profile and sender_profile.name else sender.username
+            
+            members = GroupMember.objects.filter(group=group).exclude(user_id=sender_id)
+            for member in members:
+                send_push_notification(
+                    user=member.user,
+                    title=f"New message in {group.name}",
+                    body=f"{sender_name}: {message_text}",
+                    data={
+                        "type": "group_message", 
+                        "group_id": str(group.id),
+                        "from_user_id": str(sender_id)
+                    }
+                )
+        except Exception as e:
+            logger.error(f"Group push notification error: {e}")
 
     @database_sync_to_async
     def _serialize(self, msg):

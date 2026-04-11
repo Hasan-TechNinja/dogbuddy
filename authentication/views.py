@@ -2,10 +2,10 @@ from django.shortcuts import render, get_object_or_404
 from django.db.models import Q
 
 from pet.serializers import PetInfoSerializer
-from .models import Profile, EmailVerification, ProfessionalInformation, FCMDevice
+from .models import Profile, EmailVerification, ProfessionalInformation
 from social.models import FriendRequest, Friendship
 from pet.models import PetInfo
-from .serializers import ProfessionalInformationSerializer, ProfileSerializer, UserSerializer, FCMDeviceSerializer
+from .serializers import ProfessionalInformationSerializer, ProfileSerializer, UserSerializer
 from django.contrib.auth.models import User
 import random
 from django.core.mail import send_mail
@@ -549,23 +549,3 @@ class SocialLogin(APIView):
             "profile": profile_data
         }, status=status.HTTP_200_OK)
 
-
-class RegisterFCMTokenView(APIView):
-    permission_classes = [permissions.IsAuthenticated]
-
-    def post(self, request):
-        serializer = FCMDeviceSerializer(data=request.data)
-        if serializer.is_valid():
-            fcm_token = serializer.validated_data['fcm_token']
-            device_type = serializer.validated_data.get('device_type', 'android')
-            
-            # Update if token already exists, or create new one
-            device, created = FCMDevice.objects.update_or_create(
-                fcm_token=fcm_token,
-                defaults={
-                    'user': request.user,
-                    'device_type': device_type
-                }
-            )
-            return Response({"message": "Device token registered successfully"}, status=status.HTTP_200_OK)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

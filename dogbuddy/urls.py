@@ -29,6 +29,7 @@ urlpatterns = [
     path('auth/', include('authentication.urls')),
     path('social/', include('social.urls')),
     path('pet/', include('pet.urls')),
+    path('notifications/', include('notification.urls')),
 
     path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
