@@ -193,7 +193,7 @@ STATICFILES_DIRS = [BASE_DIR / 'static']
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # Firebase Cloud Messaging
-FCM_SERVICE_ACCOUNT_KEY_PATH = BASE_DIR / 'nett4dogs-firebase-adminsdk-fbsvc-58a8df73aa.json'
+FCM_SERVICE_ACCOUNT_KEY_PATH = BASE_DIR / 'nett4dogs-firebase-adminsdk-fbsvc-c31e799cca.json'
 
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.ionos.de'
